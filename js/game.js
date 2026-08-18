@@ -475,7 +475,8 @@
     Fx.celebrate();
     Fx.flash('#f6c453', 0.22, 480);
     Sfx.correct();
-    showOverlay();
+    // 等卡片胜利动画 + 彩带播完再弹成绩浮层
+    setTimeout(showOverlay, 1200);
   }
 
   function updateStats() {
