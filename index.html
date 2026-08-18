@@ -79,20 +79,20 @@
 
   <!-- ===== controls ===== -->
   <nav class="controls" aria-label="操作">
-    <button class="btn btn-gold" id="submit"><span class="btn-glyph">✓</span>提交答案</button>
-    <button class="btn btn-ghost" id="deal"><span class="btn-glyph">🂠</span>发牌</button>
-    <button class="btn btn-ghost" id="hint"><span class="btn-glyph">💡</span>提示 <em id="hintLeft">×2</em></button>
-    <button class="btn btn-ghost" id="reveal"><span class="btn-glyph">✨</span>公布答案</button>
-    <button class="btn btn-ghost btn-undo" id="undo"><span class="btn-glyph">↩</span>撤销</button>
+    <button class="btn btn-gold" id="submit"><span class="btn-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>提交答案</button>
+    <button class="btn btn-ghost" id="deal"><span class="btn-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M5 8h14M5 16h14"/></svg></span>发牌</button>
+    <button class="btn btn-ghost" id="hint"><span class="btn-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.5.5 1 1.5 1 2.5h6c0-1 .5-2 1-2.5A6 6 0 0 0 12 3z"/></svg></span>提示 <em id="hintLeft">×2</em></button>
+    <button class="btn btn-ghost" id="reveal"><span class="btn-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>公布答案</button>
+    <button class="btn btn-ghost btn-undo" id="undo"><span class="btn-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 1 3 7"/></svg></span>撤销</button>
   </nav>
 
   <!-- ===== modes / footer ===== -->
   <footer class="modes">
     <div class="seg" role="radiogroup" aria-label="游戏模式">
-      <button class="seg-btn is-on" id="modeTimer" data-mode="timer">⏱ 计时</button>
-      <button class="seg-btn" id="modeCount" data-mode="count">🔥 挑战 90s</button>
+      <button class="seg-btn is-on" id="modeTimer" data-mode="timer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg> 计时</button>
+      <button class="seg-btn" id="modeCount" data-mode="count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-2-1-4 0-8z"/></svg> 挑战 90s</button>
     </div>
-    <button class="icon-btn" id="soundBtn" title="声音开关" aria-pressed="true">🔊</button>
+    <button class="icon-btn" id="soundBtn" title="声音开关" aria-pressed="true"></button>
   </footer>
 
   <p class="footnote">先选两个数字再点运算符 · 每步结果自动投入池中 · 点击历史步骤可回退 · Enter 提交 · Backspace 撤销 · Space 发牌</p>
@@ -101,7 +101,7 @@
 <!-- ===== success overlay ===== -->
 <div class="overlay" id="overlay" hidden>
   <div class="overlay-card">
-    <div class="overlay-badge" id="overlayBadge">🎉</div>
+    <div class="overlay-badge" id="overlayBadge"></div>
     <div class="overlay-title" id="overlayTitle">答对了!</div>
     <div class="overlay-rows" id="overlayRows"></div>
     <button class="btn btn-gold btn-lg" id="overlayOk">再来一局</button>

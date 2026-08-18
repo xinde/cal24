@@ -131,8 +131,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   position: relative;
 }
 .brand-emblem::after {
-  content: "✦"; position: absolute; top: -7px; right: -9px; font-size: 0.85rem;
-  color: var(--cyan); text-shadow: 0 0 8px var(--cyan); animation: twinkle 1.8s ease-in-out infinite;
+  content: ""; position: absolute; top: -7px; right: -9px; width: 12px; height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233ee6ff'%3E%3Cpath d='M12 2l2.4 7.2H22l-6 4.4 2.3 7.2L12 16.4 5.7 20.8 8 13.6 2 9.2h7.6z'/%3E%3C/svg%3E") center/contain no-repeat;
+  filter: drop-shadow(0 0 4px var(--cyan)); animation: twinkle 1.8s ease-in-out infinite;
 }
 @keyframes emblemPulse { 0%, 100% { box-shadow: 0 0 18px rgba(246,196,83,0.28), inset 0 0 14px rgba(246,196,83,0.2); } 50% { box-shadow: 0 0 34px rgba(246,196,83,0.55), inset 0 0 20px rgba(246,196,83,0.35); } }
 @keyframes twinkle { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.4); opacity: 1; } }
@@ -478,6 +479,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .btn:hover { transform: translateY(-2px); }
 .btn:active { transform: scale(0.96); }
 .btn .btn-glyph { font-size: 1.1rem; }
+.btn .btn-glyph svg { width: 1.1em; height: 1.1em; display: block; }
 .btn em { font-style: normal; font-size: 0.78rem; opacity: 0.85; background: rgba(0,0,0,0.25); padding: 0.12rem 0.45rem; border-radius: 999px; }
 
 .btn-gold {
@@ -506,7 +508,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   padding: 0.42rem 1.1rem; border-radius: 999px;
   font-size: 0.85rem; font-weight: 700; color: #aab3d8;
   transition: all 0.2s ease;
+  display: inline-flex; align-items: center; gap: 0.3rem;
 }
+.seg-btn svg { width: 14px; height: 14px; display: block; }
 .seg-btn.is-on {
   background: linear-gradient(180deg, var(--gold-hi), var(--gold-deep));
   color: #241d08;
@@ -518,6 +522,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-size: 1.05rem; display: grid; place-items: center;
   transition: all 0.2s;
 }
+.icon-btn svg { width: 18px; height: 18px; display: block; }
 .icon-btn:hover { background: var(--glass-strong); transform: translateY(-2px); }
 
 .footnote {
@@ -548,7 +553,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   transition: transform 0.35s cubic-bezier(0.2, 1.2, 0.3, 1);
 }
 .overlay.show .overlay-card { transform: scale(1) translateY(0); }
-.overlay-badge { font-size: 3.2rem; animation: badgePop 0.6s cubic-bezier(0.2, 1.4, 0.3, 1) 0.15s both; }
+.overlay-badge { font-size: 3.2rem; animation: badgePop 0.6s cubic-bezier(0.2, 1.4, 0.3, 1) 0.15s both; color: var(--gold); display: flex; justify-content: center; }
+.overlay-badge svg { width: 48px; height: 48px; filter: drop-shadow(0 0 12px rgba(246,196,83,0.6)); }
 @keyframes badgePop { 0% { transform: scale(0) rotate(-20deg); } 100% { transform: scale(1) rotate(0); } }
 .overlay-title { font-size: 1.6rem; font-weight: 800; margin: 0.5rem 0 1rem; color: var(--gold); }
 .overlay-rows { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.4rem; }

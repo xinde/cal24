@@ -506,7 +506,7 @@
     rows.push(['当前连对', `${state.streak} 局`]);
     rows.push(['累计答对', `${state.solved} 局`]);
 
-    els.overlayBadge.textContent = '🎉';
+    els.overlayBadge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.5 14l-2 7 5.5-3 5.5 3-2-7"/></svg>';
     els.overlayTitle.textContent = '太棒了! 算出 24!';
     els.overlayRows.innerHTML = rows.map(([k, v]) =>
       `<div class="row"><span>${k}</span><b>${v}</b></div>`).join('');
@@ -655,7 +655,9 @@
     $('modeCount').addEventListener('click', () => setMode('count'));
 
     const soundBtn = $('soundBtn');
-    function syncSound() { soundBtn.textContent = Sfx.muted ? '🔇' : '🔊'; soundBtn.setAttribute('aria-pressed', String(!Sfx.muted)); }
+    const svgSoundOn = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
+    const svgSoundOff = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+    function syncSound() { soundBtn.innerHTML = Sfx.muted ? svgSoundOff : svgSoundOn; soundBtn.setAttribute('aria-pressed', String(!Sfx.muted)); }
     syncSound();
     soundBtn.addEventListener('click', () => { Sfx.toggleMute(); syncSound(); });
 
