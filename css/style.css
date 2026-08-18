@@ -107,9 +107,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* =========================================================
- * 顶部: 品牌 + HUD
+ * 顶部: 两行布局
+ * row1: 计时/挑战模式 (左) | 声音按钮 (右)
+ * row2: 品牌徽标 (左) | HUD统计 (右)
  * ========================================================= */
-.top { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; }
+.top { display: flex; flex-direction: column; gap: 0.45rem; }
+
+.top-row1 { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.top-row2 { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
 
 .brand { display: flex; align-items: center; gap: 0.65rem; }
 .brand-emblem {
@@ -163,8 +168,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .stat-time.win { color: var(--green); text-shadow: 0 0 12px rgba(125, 255, 178, 0.8); }
 @keyframes urgentPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
 
-/* 顶部右侧: 模式切换 + 声音按钮 */
-.top-controls { display: flex; align-items: center; gap: 0.5rem; }
+/* 顶部第一行用的: 模式切换 + 声音按钮 */
 .seg { display: flex; background: var(--glass); border: 1px solid var(--ring); border-radius: 999px; padding: 0.2rem; backdrop-filter: blur(8px); }
 .seg-btn {
   padding: 0.32rem 0.85rem; border-radius: 999px;
@@ -573,7 +577,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
  * ========================================================= */
 @media (max-width: 640px) {
   .app { width: min(100% - 1rem, 1040px); padding: 0.5rem 0 0.5rem; gap: 0.45rem; }
-  .top { flex-wrap: wrap; gap: 0.5rem; }
+  .top { gap: 0.35rem; }
+  .top-row2 { flex-wrap: wrap; gap: 0.35rem; }
   .brand { gap: 0.5rem; }
   .brand-emblem { width: 38px; height: 38px; font-size: 1.3rem; }
   .brand-text h1 { font-size: 1.1rem; }
@@ -582,7 +587,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .stat { min-width: 56px; padding: 0.22rem 0.45rem; }
   .stat-label { font-size: 0.54rem; }
   .stat-value { font-size: 0.85rem; }
-  .top-controls { gap: 0.35rem; }
   .seg-btn { padding: 0.28rem 0.65rem; font-size: 0.7rem; }
   .icon-btn { width: 30px; height: 30px; }
   .icon-btn svg { width: 14px; height: 14px; }
