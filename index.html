@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#070a1a">
-<meta name="description" content="24点 · 用 4 张扑克牌, 通过加、减、乘、除凑出 24。挑战计时, 比拼最快手速与最强大脑。">
+<meta name="description" content="24点 · 分步计算: 每次选两个数字和运算符得出结果, 结果继续参与运算, 直到凑出 24。">
 <title>24点 · 极智卡牌</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23070a1a'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='34' font-weight='700' text-anchor='middle' fill='%23f6c453'%3E24%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
@@ -30,7 +30,7 @@
       <div class="brand-emblem" aria-hidden="true">24</div>
       <div class="brand-text">
         <h1>24点</h1>
-        <p>极智卡牌 · 用四张牌凑出 <b>24</b></p>
+        <p>极智卡牌 · 分步计算凑出 <b>24</b></p>
       </div>
     </div>
 
@@ -59,37 +59,31 @@
 
     <div class="felt" id="felt">
       <div class="felt-spot"></div>
-      <div class="cards" id="cards" aria-live="polite"></div>
+      <div class="pool" id="pool" aria-live="polite"></div>
+      <div class="pool-hint" id="poolHint">选择两个数字, 再点运算符得出结果</div>
     </div>
+
+    <div class="steps" id="steps" aria-live="polite"></div>
 
     <div class="message" id="message" role="status"></div>
     <div class="answer" id="answer" aria-live="polite"></div>
   </section>
 
-  <!-- ===== expression builder ===== -->
-  <section class="builder" aria-label="算式编辑">
-    <div class="expr-display" id="exprDisplay">
-      <span class="expr-ph" id="exprPh">点击牌面或按键, 拼出算式</span>
-      <span class="expr-tokens" id="exprTokens"></span>
-    </div>
-    <div class="keys" role="group" aria-label="运算符">
-      <button class="key" data-op="+">＋</button>
-      <button class="key" data-op="-">－</button>
-      <button class="key" data-op="*">×</button>
-      <button class="key" data-op="/">÷</button>
-      <button class="key key-paren" data-op="(">(</button>
-      <button class="key key-paren" data-op=")">)</button>
-      <button class="key key-back" id="backspace" title="退格 (Backspace)">⌫</button>
-      <button class="key key-clear" id="clearExpr" title="清空 (Esc)">C</button>
-    </div>
+  <!-- ===== operators ===== -->
+  <section class="ops" aria-label="运算符">
+    <button class="op op-add" data-op="+" title="加"><span>＋</span><small>加</small></button>
+    <button class="op op-sub" data-op="-" title="减"><span>－</span><small>减</small></button>
+    <button class="op op-mul" data-op="*" title="乘"><span>×</span><small>乘</small></button>
+    <button class="op op-div" data-op="/" title="除"><span>÷</span><small>除</small></button>
   </section>
 
   <!-- ===== controls ===== -->
   <nav class="controls" aria-label="操作">
-    <button class="btn btn-gold" id="submit"><span class="btn-glyph">✓</span>提交</button>
+    <button class="btn btn-gold" id="submit"><span class="btn-glyph">✓</span>提交答案</button>
     <button class="btn btn-ghost" id="deal"><span class="btn-glyph">🂠</span>发牌</button>
     <button class="btn btn-ghost" id="hint"><span class="btn-glyph">💡</span>提示 <em id="hintLeft">×2</em></button>
     <button class="btn btn-ghost" id="reveal"><span class="btn-glyph">✨</span>公布答案</button>
+    <button class="btn btn-ghost btn-undo" id="undo"><span class="btn-glyph">↩</span>撤销</button>
   </nav>
 
   <!-- ===== modes / footer ===== -->
@@ -101,7 +95,7 @@
     <button class="icon-btn" id="soundBtn" title="声音开关" aria-pressed="true">🔊</button>
   </footer>
 
-  <p class="footnote">支持键盘: 1-9 插入数字 · + − * / ( ) 运算符 · Enter 提交 · Space 发牌 · Esc 清空</p>
+  <p class="footnote">先选两个数字再点运算符 · 每步结果自动投入池中 · 点击历史步骤可回退 · Enter 提交 · Backspace 撤销 · Space 发牌</p>
 </main>
 
 <!-- ===== success overlay ===== -->

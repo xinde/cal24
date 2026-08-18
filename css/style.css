@@ -201,7 +201,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .felt-spot { position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(246, 196, 83, 0.08), transparent 60%); pointer-events: none; }
 
-.cards {
+/* =========================================================
+ * 数字池 (当前可用的数字, 含原始卡牌与每步结果)
+ * ========================================================= */
+.pool {
   position: relative;
   display: flex;
   justify-content: center;
@@ -209,9 +212,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   gap: clamp(0.6rem, 2.6vw, 1.5rem);
   min-height: clamp(150px, 24vw, 220px);
   perspective: 1200px;
+  flex-wrap: wrap;
 }
-.cards.won .card { animation: cardWin 0.6s cubic-bezier(0.22, 1.2, 0.36, 1) both; animation-delay: calc(var(--i, 0s) * 0.2); }
-.cards.answered .card { animation: cardAnswer 1s ease-in-out infinite; animation-delay: calc(var(--i, 0s)); }
+.pool.won .pchip { animation: cardWin 0.6s cubic-bezier(0.22, 1.2, 0.36, 1) both; animation-delay: calc(var(--i, 0s) * 0.2); }
+.pool.answered .pchip { animation: cardAnswer 1s ease-in-out infinite; animation-delay: calc(var(--i, 0s)); }
 @keyframes cardWin {
   0% { transform: translateY(0) scale(1); }
   35% { transform: translateY(-16px) scale(1.06); }
@@ -222,59 +226,86 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   50% { box-shadow: 0 0 30px rgba(62, 230, 255, 0.7), 0 10px 30px rgba(0, 0, 0, 0.45); }
 }
 
-/* ---------- 卡牌本体 ---------- */
-.card {
+/* ---------- 数字池筹码 ---------- */
+.pchip {
   position: relative;
-  width: clamp(72px, 16vw, 118px);
+  width: clamp(72px, 15vw, 112px);
   aspect-ratio: 3 / 4.2;
-  cursor: pointer;
-  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.22s ease, filter 0.22s ease;
-  transform-style: preserve-3d;
-}
-.card:hover { transform: translateY(-6px) scale(1.04); }
-.card:active { transform: scale(0.97); }
-.card.used { opacity: 0.34; filter: grayscale(0.7); transform: scale(0.97); cursor: not-allowed; }
-
-.card-inner {
-  position: absolute; inset: 0;
-  transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-}
-.face {
-  position: absolute; inset: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   border-radius: clamp(8px, 1.2vw, 14px);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.22s ease, filter 0.22s ease, opacity 0.35s ease;
 }
-.face.front {
+.pchip:hover { transform: translateY(-6px) scale(1.04); }
+.pchip:active { transform: scale(0.96); }
+
+/* 原始扑克牌 */
+.pchip.card-chip {
   background:
     linear-gradient(180deg, #fffdf6 0%, var(--ivory) 55%, var(--ivory-dim) 100%);
   border: 1px solid rgba(0, 0, 0, 0.14);
   color: var(--dark);
-  transform: rotateY(0deg);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   padding: 7%;
 }
-.face.back {
-  background:
-    repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 3px, transparent 3px 8px),
-    radial-gradient(120% 120% at 50% 0%, #1b2a6e, #0e1750 60%, #090f38);
-  border: 3px solid rgba(246, 196, 83, 0.65);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5), inset 0 0 22px rgba(246, 196, 83, 0.35);
+.pchip.card-chip.red { color: var(--red); }
+.pchip.card-chip.dark { color: var(--dark); }
+
+/* 计算得出的结果 */
+.pchip.result-chip {
   display: grid; place-items: center;
-  transform: rotateY(180deg);
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.22), transparent 55%),
+    linear-gradient(160deg, #3a3166 0%, #1c1640 100%);
+  border: 2px solid rgba(246, 196, 83, 0.75);
+  box-shadow:
+    0 0 24px rgba(246, 196, 83, 0.28),
+    0 10px 26px rgba(0, 0, 0, 0.5),
+    inset 0 0 18px rgba(246, 196, 83, 0.18);
 }
-.face.back::after {
-  content: "24";
+.result-val {
   font-family: var(--font-display);
-  font-weight: 800; font-size: 1.6rem;
-  color: rgba(246, 196, 83, 0.9);
-  text-shadow: 0 0 18px rgba(246, 196, 83, 0.8);
+  font-weight: 800;
+  font-size: clamp(1.5rem, 3.6vw, 2.3rem);
+  color: var(--gold-hi);
+  text-shadow: 0 0 16px rgba(246, 196, 83, 0.7);
+  line-height: 1;
+  padding: 0.15rem;
+  text-align: center;
+}
+.result-val.chip-sm { font-size: clamp(1.15rem, 2.8vw, 1.7rem); }
+.result-val.chip-xs { font-size: clamp(0.9rem, 2.2vw, 1.3rem); }
+
+/* 选中态: 第1个=青色, 第2个=品红 */
+.pchip.sel1 {
+  transform: translateY(-10px) scale(1.06);
+  box-shadow: 0 0 0 3px var(--cyan), 0 0 26px rgba(62, 230, 255, 0.55), 0 12px 30px rgba(0, 0, 0, 0.5);
+  filter: brightness(1.08);
+}
+.pchip.sel2 {
+  transform: translateY(-10px) scale(1.06);
+  box-shadow: 0 0 0 3px var(--magenta), 0 0 26px rgba(255, 95, 162, 0.55), 0 12px 30px rgba(0, 0, 0, 0.5);
+  filter: brightness(1.08);
+}
+.pchip.result-chip.sel1 { border-color: var(--cyan); }
+.pchip.result-chip.sel2 { border-color: var(--magenta); }
+
+/* 离场 / 入场动画 */
+.pchip.leaving {
+  transform: scale(0.25) translateY(-30px);
+  opacity: 0;
+  filter: blur(3px);
+  pointer-events: none;
+}
+.pchip.entering { animation: chipPop 0.5s cubic-bezier(0.2, 1.4, 0.3, 1) both; }
+@keyframes chipPop {
+  0% { transform: scale(0.2) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(1.14) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
-/* 发牌动画: 从空中飞入 + 落地后翻转 */
-.card.dealt { animation: dealFly 0.55s cubic-bezier(0.22, 1.25, 0.36, 1) var(--i, 0s) both; }
-.card.dealt .card-inner { transform: rotateY(180deg); }
+/* 发牌动画: 从空中飞入 */
+.pchip.dealt { animation: dealFly 0.55s cubic-bezier(0.22, 1.25, 0.36, 1) var(--i, 0s) both; }
 @keyframes dealFly {
   0% { transform: translateY(-42vh) translateX(calc(var(--dx, 0) * -1px)) rotate(var(--spin, 0deg)) scale(0.55); opacity: 0; }
   55% { opacity: 1; }
@@ -282,9 +313,16 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   100% { transform: translateY(0) translateX(0) rotate(0deg) scale(1); opacity: 1; }
 }
 
-/* ---------- 牌面细节 ---------- */
-.face.front.red { color: var(--red); }
-.face.front.dark { color: var(--dark); }
+/* 池内提示文字 */
+.pool-hint {
+  margin-top: 0.7rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: #93a0c8;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- 牌面细节 (卡牌筹码) ---------- */
 .corner { position: absolute; display: flex; flex-direction: column; align-items: center; line-height: 1; user-select: none; }
 .corner b { font-family: var(--font-display); font-size: clamp(0.7rem, 1.6vw, 1.05rem); }
 .corner i { font-style: normal; font-size: clamp(0.62rem, 1.4vw, 0.9rem); }
@@ -295,6 +333,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2%;
+  pointer-events: none;
 }
 .big-rank { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.2rem, 3vw, 2.1rem); line-height: 1; }
 .big-suit { font-size: clamp(1.5rem, 4vw, 2.7rem); line-height: 1; opacity: 0.92; text-shadow: 0 1px 0 rgba(255,255,255,0.6); }
@@ -337,62 +376,92 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* =========================================================
- * 算式构建器
+ * 步骤历史
  * ========================================================= */
-.builder { display: flex; flex-direction: column; gap: 0.7rem; }
-.expr-display {
-  min-height: 64px;
-  background: var(--glass-strong);
-  border: 1.5px solid var(--ring);
-  border-radius: var(--radius);
-  display: flex; align-items: center; justify-content: center;
-  gap: 0.3rem; flex-wrap: wrap;
-  padding: 0.8rem 1rem;
-  font-size: 1.5rem;
-  backdrop-filter: blur(10px);
-  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.35);
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.1rem;
 }
-.expr-ph { color: #7c86b2; font-size: 0.95rem; font-weight: 500; }
-.expr-tokens { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; justify-content: center; }
-.tok-num {
-  font-family: var(--font-display); font-weight: 800;
-  color: var(--ink);
-  background: linear-gradient(180deg, #fffdf6, var(--ivory-dim));
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
-  min-width: 2em; height: 2em; padding: 0 0.35em;
-  display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
-}
-.tok-op {
-  color: var(--gold); font-weight: 800; font-size: 1.25rem; padding: 0 0.1rem;
-  text-shadow: 0 0 10px rgba(246, 196, 83, 0.5);
-}
-.tok-paren { color: var(--cyan); font-weight: 800; font-size: 1.2rem; text-shadow: 0 0 10px rgba(62, 230, 255, 0.5); }
-
-.expr-display.shake { animation: shake 0.4s ease; }
-@keyframes shake {
-  0%, 100% { transform: translateX(0); border-color: var(--ring); }
-  20%, 60% { transform: translateX(-8px); border-color: var(--magenta); }
-  40%, 80% { transform: translateX(8px); border-color: var(--magenta); }
-}
-
-/* 按键 */
-.keys { display: flex; justify-content: center; gap: 0.55rem; flex-wrap: wrap; }
-.key {
-  width: clamp(46px, 10vw, 60px); height: clamp(40px, 8vw, 48px);
-  border-radius: 12px;
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
   background: var(--glass);
   border: 1px solid var(--ring);
-  font-size: 1.15rem; font-weight: 800;
+  padding: 0.32rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
   color: #dfe4f7;
-  transition: transform 0.12s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.key:hover { background: var(--glass-strong); border-color: rgba(246, 196, 83, 0.5); transform: translateY(-2px); }
-.key:active { transform: scale(0.92); }
-.key-paren { color: var(--cyan); }
-.key-back { color: var(--magenta); }
-.key-clear { color: #ffd76a; }
+.step:hover { transform: translateY(-2px); border-color: rgba(62, 230, 255, 0.6); box-shadow: 0 0 14px rgba(62, 230, 255, 0.25); }
+.step .st-a, .step .st-b { font-family: var(--font-display); font-weight: 800; }
+.step .st-op { color: var(--gold); font-weight: 800; }
+.step .st-eq { color: #7c86b2; }
+.step .st-res { font-family: var(--font-display); font-weight: 800; color: var(--gold-hi); text-shadow: 0 0 10px rgba(246, 196, 83, 0.5); }
+.step.entering { animation: stepPop 0.35s cubic-bezier(0.2, 1.4, 0.3, 1) both; }
+@keyframes stepPop {
+  0% { transform: scale(0.5) translateY(8px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* =========================================================
+ * 运算符
+ * ========================================================= */
+.ops {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(0.55rem, 1.4vw, 0.8rem);
+  width: min(520px, 100%);
+  margin: 0 auto;
+}
+.op {
+  position: relative;
+  height: clamp(52px, 8.5vw, 62px);
+  border-radius: 14px;
+  background: var(--glass);
+  border: 1px solid var(--ring);
+  color: #dfe4f7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  transition: transform 0.13s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s, color 0.2s;
+}
+.op span { font-size: clamp(1.35rem, 3vw, 1.7rem); font-weight: 800; line-height: 1; }
+.op small { font-size: 0.62rem; opacity: 0.7; letter-spacing: 0.12em; }
+.op:hover { background: var(--glass-strong); border-color: rgba(246, 196, 83, 0.5); transform: translateY(-2px); }
+.op:active { transform: scale(0.95); }
+.op-add span { color: var(--cyan); }
+.op-sub span { color: var(--magenta); }
+.op-mul span { color: var(--gold); }
+.op-div span { color: var(--green); }
+
+/* 选中两个数字后 → 运算符激活 */
+.op.ready {
+  background: linear-gradient(180deg, var(--gold-hi) 0%, var(--gold) 50%, var(--gold-deep) 100%);
+  border-color: transparent;
+  color: #241d08;
+  box-shadow: 0 8px 24px rgba(246, 196, 83, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  animation: opReadyPulse 1.4s ease-in-out infinite;
+}
+.op.ready span { color: #241d08; }
+.op.ready small { color: #241d08; opacity: 0.75; }
+@keyframes opReadyPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.ops.shake { animation: shake 0.4s ease; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
 
 /* =========================================================
  * 操作按钮
@@ -505,10 +574,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .stat { min-width: 72px; padding: 0.4rem 0.6rem; }
   .stat-value { font-size: 1rem; }
   .felt { padding: 1.2rem 0.5rem; border-radius: 20px; }
-  .cards { min-height: 132px; gap: 0.45rem; }
+  .pool { min-height: 130px; gap: 0.45rem; }
   .btn { min-width: 0; flex: 1 1 42%; padding: 0.66rem 0.6rem; }
-  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.55rem; }
-  .key { width: auto; height: 46px; font-size: 1.1rem; }
+  .op { height: 50px; }
+  .op small { display: none; }
   .seg-btn { padding: 0.42rem 0.9rem; font-size: 0.8rem; }
   .footnote { font-size: 0.62rem; line-height: 1.6; padding: 0 1rem; }
 }
@@ -518,6 +587,5 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
  * ========================================================= */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
-  .card.dealt { animation: none; opacity: 1; }
-  .card.dealt .card-inner { transform: none; transition: none; }
+  .pchip.dealt { animation: none; opacity: 1; }
 }

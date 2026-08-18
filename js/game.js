@@ -1,5 +1,8 @@
 /* =========================================================
- * 24点 游戏主逻辑
+ * 24点 游戏主逻辑 — 分步计算版
+ * 玩法: 每次从数字池选 2 个数字 + 1 个运算符, 得出结果
+ *       结果自动投入池中继续参与运算, 直到只剩 1 个数,
+ *       若等于 24 则提交答案。
  * ========================================================= */
 (function () {
   'use strict';
@@ -8,6 +11,7 @@
   const SUITS = ['♠', '♥', '♦', '♣'];
   const RANK = { 1: 'A', 11: 'J', 12: 'Q', 13: 'K' };
   const CHALLENGE_SECONDS = 90;
+  const Frac = Solver.Frac;
 
   /* ---------- 持久化 ---------- */
   const store = {
@@ -17,42 +21,49 @@
 
   /* ---------- 游戏状态 ---------- */
   let state = {
-    cards: [],          // [{value, suit, rank}]
-    tokens: [],         // 当前算式 token 数组
-    mode: 'timer',      // 'timer' | 'count'
+    pool: [],        // [{id, value: Frac, kind:'card'|'result', suit?, rank?, leaving?}]
+    history: [],     // [{a, op, b, result, poolAfter}]  poolAfter = 该步之后的池快照
+    sel: [],         // 选中的池项 id 数组 (有序, 最多 2)
+    cards: [],       // 本局原始 4 张牌 {value, suit}
+    mode: 'timer',
     round: 1,
     streak: 0,
     solved: 0,
-    best: Infinity,     // 秒
-    solution: [],       // 本局全部解
-    started: false,     // 计时是否已开始
-    over: false,        // 本局是否已结束(出答案/超时)
+    best: Infinity,
+    solution: [],
+    started: false,
+    over: false,     // 已提交/超时/公布 → 本局结束
     elapse: 0,
     timerId: null,
     hintsLeft: 2,
     challengeLeft: CHALLENGE_SECONDS
   };
+  let idSeq = 0;
 
   /* ---------- DOM 引用 ---------- */
   const els = {
-    cards: $('cards'), felt: $('felt'),
+    pool: $('pool'), poolHint: $('poolHint'),
+    steps: $('steps'),
     timer: $('timer'), best: $('best'), streak: $('streak'),
     roundInfo: $('roundInfo'), modeInfo: $('modeInfo'),
     message: $('message'), answer: $('answer'),
-    exprTokens: $('exprTokens'), exprPh: $('exprPh'),
     hintLeft: $('hintLeft'),
+    submit: $('submit'),
     overlay: $('overlay'), overlayBadge: $('overlayBadge'),
-    overlayTitle: $('overlayTitle'), overlayRows: $('overlayRows'),
+    overlayTitle: $('overlayTitle'), overlayRows: $('overlayRows')
   };
 
   /* =========================================================
-   * 帮助函数
+   * 工具
    * ========================================================= */
-  function fmtTime(sec) {
-    if (!isFinite(sec)) return '--';
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return m > 0 ? `${m}′${String(Math.floor(s)).padStart(2, '0')}″` : `${s.toFixed(1)}s`;
+  const fmtFrac = (f) => {
+    if (f.d === 1) return String(f.n);
+    return `${f.n}/${f.d}`;
+  };
+
+  function cloneFrac(f) { return new Frac(f.n, f.d); }
+  function cloneItem(it) {
+    return { id: it.id, value: cloneFrac(it.value), kind: it.kind, suit: it.suit, rank: it.rank, label: it.label, leaving: false };
   }
 
   function setMessage(text, kind = '') {
@@ -62,212 +73,277 @@
     clearTimeout(el._t);
     el._t = setTimeout(() => el.classList.remove('show'), 3400);
   }
-
-  function clearMessage() {
-    els.message.className = 'message';
-    els.message.textContent = '';
-  }
+  function clearMessage() { els.message.className = 'message'; els.message.textContent = ''; }
 
   function showAnswer(html, kind = 'gold') {
     els.answer.innerHTML = html;
     els.answer.className = 'answer show ' + kind;
   }
+  function clearAnswer() { els.answer.className = 'answer'; els.answer.innerHTML = ''; }
 
-  function clearAnswer() {
-    els.answer.className = 'answer';
-    els.answer.innerHTML = '';
-  }
+  const fmtTime = (sec) => {
+    if (!isFinite(sec)) return '--';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m > 0 ? `${m}′${String(Math.floor(s)).padStart(2, '0')}″` : `${s.toFixed(1)}s`;
+  };
 
   /* =========================================================
-   * 牌面渲染
+   * 数字池渲染
    * ========================================================= */
-  function rankLabel(v) { return RANK[v] || String(v); }
+  function chipSizeClass(label) {
+    if (!label) return '';
+    if (label.length >= 4) return 'chip-xs';
+    if (label.length === 3) return 'chip-sm';
+    return '';
+  }
 
   function cardFaceHTML(card) {
     const col = (card.suit === '♥' || card.suit === '♦') ? 'red' : 'dark';
-    const r = rankLabel(card.value);
+    const r = RANK[card.value] || String(card.value);
     return `
       <div class="corner tl"><b>${r}</b><i>${card.suit}</i></div>
       <div class="corner br"><b>${r}</b><i>${card.suit}</i></div>
-      <div class="pips" data-suit="${card.suit}">
-        <span class="big-rank">${r}</span>
-        <span class="big-suit">${card.suit}</span>
-      </div>`;
+      <div class="pips"><span class="big-rank">${r}</span><span class="big-suit">${card.suit}</span></div>`;
   }
 
-  function createCardEl(card, i) {
+  function createChipEl(item, idx) {
     const el = document.createElement('div');
-    el.className = 'card dealt';
-    el.dataset.value = card.value;
-    el.style.setProperty('--i', `${i * 0.12}s`);
-    el.style.setProperty('--spin', `${(i - 1.5) * 7 - 4}deg`);
-    el.innerHTML = `
-      <div class="card-inner">
-        <div class="face back"></div>
-        <div class="face front ${(card.suit === '♥' || card.suit === '♦') ? 'red' : 'dark'}">${cardFaceHTML(card)}</div>
-      </div>`;
+    el.className = 'pchip ' + (item.kind === 'card' ? 'card-chip ' + ((item.suit === '♥' || item.suit === '♦') ? 'red' : 'dark') : 'result-chip');
+    el.dataset.id = item.id;
+    if (item.kind === 'result') {
+      el.innerHTML = `<span class="result-val ${chipSizeClass(item.label)}">${item.label}</span>`;
+    } else {
+      el.innerHTML = cardFaceHTML(item);
+    }
+    if (item.leaving) el.classList.add('leaving');
+    if (item.entering) el.classList.add('entering');
+    if (idx != null) {
+      el.style.setProperty('--i', `${idx * 0.12}s`);
+      el.style.setProperty('--spin', `${(idx - 1.5) * 7 - 4}deg`);
+      if (item.kind === 'card') el.classList.add('dealt');
+    }
     return el;
   }
 
-  function renderCards() {
-    els.cards.innerHTML = '';
-    state.cards.forEach((card, i) => els.cards.appendChild(createCardEl(card, i)));
+  function renderPool() {
+    els.pool.innerHTML = '';
+    state.pool.forEach((item, i) => {
+      const el = createChipEl(item, state.dealing ? i : null);
+      els.pool.appendChild(el);
+    });
+  }
 
-    // 计算每张牌相对牌桌中心的水平偏移, 用于发牌聚拢动画
+  function dealAnimPositions() {
     requestAnimationFrame(() => {
-      const cardsRect = els.cards.getBoundingClientRect();
-      const centerX = cardsRect.left + cardsRect.width / 2;
-      Array.from(els.cards.children).forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        const dx = rect.left + rect.width / 2 - centerX;
-        el.style.setProperty('--dx', dx.toFixed(1));
+      const rect = els.pool.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      Array.from(els.pool.children).forEach((el) => {
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--dx', (r.left + r.width / 2 - cx).toFixed(1));
       });
     });
-
-    // 发牌动画: 每张牌落地瞬间迸发金色火花 + 冲击波
-    state.cards.forEach((_, i) => {
-      setTimeout(() => {
-        const el = els.cards.children[i];
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        Fx.sparks(cx, cy, 14, '#f6c453');
-        Fx.sparks(cx, cy, 6, '#3ee6ff');
-        Fx.ring(cx, cy, '#f6c453');
-      }, 470 + i * 110);
-    });
-
-    // 落地后翻面展示正面
-    state.cards.forEach((_, i) => {
-      setTimeout(() => {
-        const el = els.cards.children[i];
-        if (el) el.classList.remove('dealt');
-      }, 570 + i * 110);
-    });
   }
 
-  /* 根据当前算式, 标记哪些牌已被使用(置灰) */
-  function syncUsedState() {
-    const usedCount = {};
-    state.tokens.forEach(t => { if (/^\d+$/.test(t)) usedCount[t] = (usedCount[t] || 0) + 1; });
-    const seen = {};
-    Array.from(els.cards.children).forEach((el) => {
-      const v = el.dataset.value;
-      seen[v] = (seen[v] || 0) + 1;
-      const used = (usedCount[v] || 0) >= seen[v];
-      el.classList.toggle('used', used);
+  /** 更新选中态视觉 */
+  function syncSelection() {
+    Array.from(els.pool.children).forEach((el) => {
+      const id = +el.dataset.id;
+      el.classList.remove('sel1', 'sel2');
+      const i = state.sel.indexOf(id);
+      if (i === 0) el.classList.add('sel1');
+      if (i === 1) el.classList.add('sel2');
     });
+    // 运算符按钮激活态
+    const ready = state.sel.length === 2 && !state.over;
+    document.querySelectorAll('.op').forEach(b => b.classList.toggle('ready', ready));
+    // 提示文字
+    const hint = els.poolHint;
+    if (state.over) {
+      hint.textContent = state.pool.length === 1 && state.pool[0].value.eq(Frac.of(24)) ? '结果 = 24, 点击提交答案!' : '';
+    } else if (state.pool.length === 1) {
+      hint.textContent = state.pool[0].value.eq(Frac.of(24)) ? '结果 = 24, 点击提交答案!' : '只剩一个数字, 点击提交看看结果';
+    } else if (state.sel.length === 2) {
+      hint.textContent = '请选择运算符 (+ − × ÷)';
+    } else if (state.sel.length === 1) {
+      hint.textContent = '已选 1 个, 再选 1 个';
+    } else {
+      hint.textContent = '选择两个数字, 再点运算符得出结果';
+    }
   }
 
   /* =========================================================
-   * 算式构建
+   * 步骤历史
    * ========================================================= */
-  function exprRaw() { return state.tokens.join(' '); }
+  function renderSteps() {
+    els.steps.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    state.history.forEach((h, i) => {
+      const el = document.createElement('button');
+      el.className = 'step';
+      el.dataset.index = i;
+      el.title = '回退到这里';
+      el.innerHTML = `
+        <span class="st-a">${h.a.label}</span>
+        <span class="st-op">${h.op}</span>
+        <span class="st-b">${h.b.label}</span>
+        <span class="st-eq">=</span>
+        <span class="st-res">${h.result.label}</span>`;
+      frag.appendChild(el);
+    });
+    els.steps.appendChild(frag);
+  }
 
-  function renderExpr() {
-    els.exprTokens.innerHTML = '';
-    const tokens = state.tokens;
-    if (tokens.length === 0) {
-      els.exprPh.style.display = '';
+  /** 回退到第 index 步之后的状态 (index = -1 回到初始) */
+  function rewindTo(index) {
+    if (state.over) return;
+    if (index < -1 || index >= state.history.length) return;
+    if (index === -1) {
+      // 回到初始: 只保留原始 4 张牌
+      state.pool = state.cards.map(c => ({
+        id: ++idSeq, value: Frac.of(c.value), kind: 'card', suit: c.suit, rank: c.value, label: String(c.value)
+      }));
+      state.history = [];
+    } else {
+      state.pool = state.history[index].poolAfter.map(cloneItem);
+      state.history = state.history.slice(0, index + 1);
+    }
+    state.sel = [];
+    renderPool();
+    renderSteps();
+    syncSelection();
+  }
+
+  function undo() {
+    if (state.over) return;
+    if (state.history.length === 0) {
+      setMessage('没有可撤销的步骤', 'warn');
       return;
     }
-    els.exprPh.style.display = 'none';
-    tokens.forEach(t => {
-      const span = document.createElement('span');
-      if (/^\d+$/.test(t)) {
-        span.className = 'tok-num';
-        span.textContent = t;
-      } else if (t === '*' || t === '/') {
-        span.className = 'tok-op';
-        span.textContent = t === '*' ? '×' : '÷';
-      } else if (t === '+' || t === '-') {
-        span.className = 'tok-op';
-        span.textContent = t;
-      } else {
-        span.className = 'tok-paren';
-        span.textContent = t;
-      }
-      els.exprTokens.appendChild(span);
-    });
-    syncUsedState();
-  }
-
-  function appendToken(t) {
-    // 数字去重校验: 最多使用该牌出现的次数
-    if (/^\d+$/.test(t)) {
-      const inExpr = state.tokens.filter(x => x === t).length;
-      const inDeal = state.cards.filter(c => String(c.value) === t).length;
-      if (inExpr >= inDeal) return false;
-    }
-    state.tokens.push(t);
-    renderExpr();
+    rewindTo(state.history.length - 2);
     Sfx.click();
-    return true;
-  }
-
-  function backspace() {
-    if (state.over) return;
-    state.tokens.pop();
-    renderExpr();
-    Sfx.click();
-  }
-
-  function clearExpr() {
-    if (state.over) return;
-    if (state.tokens.length) {
-      state.tokens = [];
-      renderExpr();
-      Sfx.click();
-    }
   }
 
   /* =========================================================
-   * 计时器
+   * 选择交互
    * ========================================================= */
-  function tick() {
-    state.elapse += 0.1;
-    updateTimerDisplay();
-    if (state.mode === 'count') {
-      state.challengeLeft = Math.max(0, CHALLENGE_SECONDS - state.elapse);
-      const el = els.timer;
-      el.textContent = fmtTime(state.challengeLeft);
-      el.classList.toggle('urgent', state.challengeLeft <= 10);
-      // 最后 5 秒滴答音
-      if (state.challengeLeft <= 5.05 && state.challengeLeft > 0 && Math.abs(state.challengeLeft - Math.round(state.challengeLeft)) < 0.06) {
-        Sfx.tick();
-      }
-      if (state.challengeLeft <= 0) {
-        stopTimer();
-        onTimeUp();
-      }
-    }
-  }
-
-  function updateTimerDisplay() {
-    if (state.mode === 'count') {
-      els.timer.textContent = fmtTime(state.challengeLeft);
+  function toggleSelect(id) {
+    const i = state.sel.indexOf(id);
+    if (i !== -1) {
+      state.sel.splice(i, 1);
     } else {
-      els.timer.textContent = fmtTime(state.elapse);
+      if (state.sel.length >= 2) state.sel.shift(); // 已满 2 个则替换最早选中的
+      state.sel.push(id);
+    }
+    syncSelection();
+    Sfx.click();
+  }
+
+  /* =========================================================
+   * 计算一步
+   * ========================================================= */
+  function compute(op) {
+    if (state.over) return;
+    if (state.pool.length <= 1) {
+      setMessage(state.pool[0] && state.pool[0].value.eq(Frac.of(24)) ? '已经算出 24 了, 提交答案吧' : '数字不够, 先发牌吧', 'warn');
+      return;
+    }
+    if (state.sel.length < 2) {
+      setMessage('先选两个数字, 再点运算符', 'warn');
+      return;
+    }
+    const [idA, idB] = state.sel;
+    const a = state.pool.find(i => i.id === idA);
+    const b = state.pool.find(i => i.id === idB);
+    if (!a || !b) { state.sel = []; syncSelection(); return; }
+
+    let res;
+    try {
+      switch (op) {
+        case '+': res = a.value.add(b.value); break;
+        case '-': res = a.value.sub(b.value); break;
+        case '*': res = a.value.mul(b.value); break;
+        case '/':
+          if (b.value.n === 0) throw new Error('div0');
+          res = a.value.div(b.value);
+          break;
+      }
+    } catch (e) {
+      setMessage('不能除以 0, 换个数字试试', 'error');
+      Sfx.wrong();
+      shakeOps();
+      return;
+    }
+
+    // 动画: 两个选中数字飞出, 结果弹出
+    const elA = els.pool.querySelector(`.pchip[data-id="${idA}"]`);
+    const elB = els.pool.querySelector(`.pchip[data-id="${idB}"]`);
+    if (elA) elA.classList.add('leaving');
+    if (elB) elB.classList.add('leaving');
+
+    const resultLabel = fmtFrac(res);
+    const resultItem = { id: ++idSeq, value: res, kind: 'result', label: resultLabel, entering: true };
+    const resultEl = createChipEl(resultItem);
+    els.pool.appendChild(resultEl);
+
+    // 逻辑池更新
+    state.pool = state.pool.filter(i => i.id !== idA && i.id !== idB);
+    state.pool.push(resultItem);
+
+    // 记录历史 (含该步之后的池快照)
+    const poolAfter = state.pool.map(cloneItem);
+    const historyEntry = {
+      a: { label: a.label, value: cloneFrac(a.value) },
+      op, b: { label: b.label, value: cloneFrac(b.value) },
+      result: { label: resultLabel, value: cloneFrac(res) },
+      poolAfter
+    };
+    state.history.push(historyEntry);
+    state.sel = [];
+
+    renderSteps();
+    const lastStep = els.steps.lastElementChild;
+    if (lastStep) lastStep.classList.add('entering');
+    syncSelection();
+
+    // 结果特效: 火花 + 冲击波 + 音效
+    const rect = resultEl.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    Fx.sparks(cx, cy, 16, '#f6c453');
+    Fx.sparks(cx, cy, 8, '#3ee6ff');
+    Fx.ring(cx, cy, '#f6c453');
+    Sfx.click();
+
+    // 清除离场元素
+    setTimeout(() => {
+      state.pool = state.pool.filter(i => !i.leaving);
+      Array.from(els.pool.children).forEach(c => {
+        if (c.classList.contains('leaving')) c.remove();
+      });
+    }, 520);
+
+    // 是否只剩一个数
+    if (state.pool.length === 1) {
+      const v = state.pool[0];
+      els.pool.classList.add('done');
+      if (v.value.eq(Frac.of(24))) {
+        Fx.flash('#f6c453', 0.16, 420);
+        Fx.confettiBurst(cx, cy, { count: 60, power: 1 });
+        Sfx.reveal();
+        setMessage('结果 = 24! 点击提交答案锁定成绩', 'info');
+      } else {
+        setMessage(`结果是 ${v.label}, 不等于 24`, 'error');
+        Sfx.wrong();
+      }
     }
   }
 
-  function startTimer() {
-    stopTimer();
-    state.elapse = 0;
-    state.challengeLeft = CHALLENGE_SECONDS;
-    updateTimerDisplay();
-    state.started = true;
-    state.timerId = setInterval(tick, 100);
-  }
-
-  function stopTimer() {
-    if (state.timerId) clearInterval(state.timerId);
-    state.timerId = null;
-  }
-
-  function pauseTimer() {
-    stopTimer();
+  function shakeOps() {
+    const ops = document.querySelector('.ops');
+    ops.classList.remove('shake');
+    void ops.offsetWidth;
+    ops.classList.add('shake');
   }
 
   /* =========================================================
@@ -282,23 +358,23 @@
     clearMessage();
     clearAnswer();
     state.over = false;
+    state.sel = [];
     state.hintsLeft = 2;
     $('hintLeft').textContent = '×' + state.hintsLeft;
+    els.pool.classList.remove('done', 'won');
 
-    // 确保发到有解的牌
     let cards;
     do {
       cards = [randomCard(), randomCard(), randomCard(), randomCard()];
     } while (!Solver.isSolvable(cards.map(c => c.value)));
 
     state.cards = cards;
-    state.tokens = [];
     state.solution = Solver.solve(cards.map(c => c.value));
-    renderExpr();
+    state.pool = cards.map(c => ({ id: ++idSeq, value: Frac.of(c.value), kind: 'card', suit: c.suit, rank: c.value, label: String(c.value) }));
+    state.history = [];
+    state.dealing = true;
 
     $('roundInfo').textContent = `第 ${state.round} 局`;
-
-    // 重置计时显示
     if (state.mode === 'count') {
       els.timer.textContent = fmtTime(CHALLENGE_SECONDS);
       els.timer.classList.remove('urgent');
@@ -307,60 +383,89 @@
     }
     els.timer.classList.remove('win');
 
-    renderCards();
+    renderPool();
+    renderSteps();
+    syncSelection();
+    dealAnimPositions();
     Sfx.deal();
+
+    // 落地动画: 火花 + 冲击波
+    state.pool.forEach((_, i) => {
+      setTimeout(() => {
+        const el = els.pool.children[i];
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        Fx.sparks(cx, cy, 14, '#f6c453');
+        Fx.sparks(cx, cy, 6, '#3ee6ff');
+        Fx.ring(cx, cy, '#f6c453');
+      }, 470 + i * 110);
+    });
+    state.cards.forEach((_, i) => {
+      setTimeout(() => {
+        const el = els.pool.children[i];
+        if (el) el.classList.remove('dealt');
+      }, 580 + i * 110);
+    });
+    state.dealing = false;
+
     startTimer();
   }
 
   /* =========================================================
-   * 提交
+   * 计时器
    * ========================================================= */
-  function submit() {
-    if (state.over) return;
-    const raw = exprRaw();
-    if (state.tokens.length === 0) {
-      setMessage('先把 4 张牌都放进算式里呀', 'warn');
-      return;
-    }
-
-    // 1) 数字必须恰好等于 4 张牌
-    const nums = Solver.numbersInExpr(raw);
-    const dealNums = state.cards.map(c => c.value).slice().sort((a, b) => a - b);
-    const sortedNums = nums.slice().sort((a, b) => a - b);
-    if (sortedNums.join(',') !== dealNums.join(',')) {
-      setMessage('必须恰好使用这 4 张牌各一次', 'error');
-      Sfx.wrong();
-      shakeExpr();
-      return;
-    }
-
-    // 2) 求值
-    let val;
-    try {
-      val = Solver.evaluateExpr(raw);
-    } catch (e) {
-      setMessage('算式不完整或括号不匹配', 'error');
-      Sfx.wrong();
-      shakeExpr();
-      return;
-    }
-
-    // 3) 判断 24
-    if (val.eq(Solver.Frac.of(24))) {
-      onCorrect();
+  function tick() {
+    state.elapse += 0.1;
+    if (state.mode === 'count') {
+      state.challengeLeft = Math.max(0, CHALLENGE_SECONDS - state.elapse);
+      els.timer.textContent = fmtTime(state.challengeLeft);
+      els.timer.classList.toggle('urgent', state.challengeLeft <= 10);
+      if (state.challengeLeft <= 5.05 && state.challengeLeft > 0 && Math.abs(state.challengeLeft - Math.round(state.challengeLeft)) < 0.06) {
+        Sfx.tick();
+      }
+      if (state.challengeLeft <= 0) {
+        stopTimer();
+        onTimeUp();
+      }
     } else {
-      const pretty = val.d === 1 ? String(val.n) : `${val.n}/${val.d}`;
-      setMessage(`差一点! 这个算式算出来是 ${pretty}`, 'error');
-      Sfx.wrong();
-      shakeExpr();
+      els.timer.textContent = fmtTime(state.elapse);
     }
   }
 
-  function shakeExpr() {
-    const d = $('exprDisplay');
-    d.classList.remove('shake');
-    void d.offsetWidth;
-    d.classList.add('shake');
+  function startTimer() {
+    stopTimer();
+    state.elapse = 0;
+    state.challengeLeft = CHALLENGE_SECONDS;
+    if (state.mode === 'count') els.timer.textContent = fmtTime(state.challengeLeft);
+    else els.timer.textContent = '00.0s';
+    state.started = true;
+    state.timerId = setInterval(tick, 100);
+  }
+
+  function stopTimer() {
+    if (state.timerId) clearInterval(state.timerId);
+    state.timerId = null;
+  }
+
+  /* =========================================================
+   * 提交答案
+   * ========================================================= */
+  function submit() {
+    if (state.over) return;
+    if (state.pool.length > 1) {
+      setMessage(`还剩 ${state.pool.length} 个数字, 继续计算吧`, 'warn');
+      return;
+    }
+    const v = state.pool[0];
+    if (!v.value.eq(Frac.of(24))) {
+      setMessage(`结果是 ${v.label}, 不等于 24`, 'error');
+      Sfx.wrong();
+      shakeOps();
+      return;
+    }
+    onCorrect();
   }
 
   function onCorrect() {
@@ -369,7 +474,6 @@
     state.streak += 1;
     state.solved += 1;
 
-    // 最佳成绩
     if (state.mode === 'timer' && state.elapse < state.best) {
       state.best = state.elapse;
       store.set('cal24.best', String(state.best));
@@ -378,14 +482,11 @@
     store.set('cal24.solved', String(state.solved));
     updateStats();
 
-    // 特效
-    els.cards.classList.add('won');
+    els.pool.classList.add('won');
     els.timer.classList.add('win');
     Fx.celebrate();
     Fx.flash('#f6c453', 0.22, 480);
     Sfx.correct();
-
-    // 弹出结算
     showOverlay();
   }
 
@@ -405,12 +506,12 @@
     rows.push(['当前连对', `${state.streak} 局`]);
     rows.push(['累计答对', `${state.solved} 局`]);
 
-    els.overlayBadge.textContent = state.mode === 'count' && state.challengeLeft <= 0 ? '⏰' : '🎉';
-    els.overlayTitle.textContent = state.mode === 'count' && state.challengeLeft <= 0 ? '时间到!' : '太棒了! 答对了!';
+    els.overlayBadge.textContent = '🎉';
+    els.overlayTitle.textContent = '太棒了! 算出 24!';
     els.overlayRows.innerHTML = rows.map(([k, v]) =>
       `<div class="row"><span>${k}</span><b>${v}</b></div>`).join('');
     els.overlay.hidden = false;
-    void els.overlay.offsetWidth; // 强制回流, 确保先计算 opacity:0 再触发过渡
+    void els.overlay.offsetWidth;
     els.overlay.classList.add('show');
   }
 
@@ -420,7 +521,7 @@
   }
 
   /* =========================================================
-   * 提示
+   * 提示: 高亮解法第一步涉及的两个数字
    * ========================================================= */
   function hint() {
     if (state.over) return;
@@ -433,14 +534,27 @@
     const step = Solver.firstStep(sol);
     state.hintsLeft--;
     $('hintLeft').textContent = '×' + state.hintsLeft;
+
     if (step) {
-      const pretty = Solver.prettyExpr(step.sub).replace(/[()]/g, '');
-      const val = step.val.d === 1 ? String(step.val.n) : `${step.val.n}/${step.val.d}`;
-      setMessage(`提示: 先算 ${pretty} = ${val}, 继续加油!`, 'info');
+      const parts = step.sub.trim().split(/\s*([+\-*/])\s*/).filter(Boolean);
+      const opChar = { '+': '+', '-': '-', '*': '×', '/': '÷' }[parts[1]];
+      const aNum = parseInt(parts[0], 10), bNum = parseInt(parts[2], 10);
+      const pretty = `${parts[0]} ${opChar} ${parts[2]} = ${fmtFrac(step.val)}`;
+      setMessage(`提示: 先算 ${pretty}`, 'info');
+      // 高亮池中匹配的两个数字
+      const targets = [];
+      for (const it of state.pool) {
+        if (it.value.eq(Frac.of(aNum)) || it.value.eq(Frac.of(bNum))) targets.push(it.id);
+        if (targets.length === 2) break;
+      }
+      if (targets.length === 2) {
+        state.sel = targets;
+        syncSelection();
+        Fx.sparks(innerWidth / 2, innerHeight * 0.42, 12, '#3ee6ff');
+      }
     } else {
       setMessage(`提示: ${Solver.prettyExpr(sol)}`, 'info');
     }
-    Fx.sparks(innerWidth / 2, innerHeight * 0.45, 12, '#3ee6ff');
     Sfx.click();
   }
 
@@ -454,9 +568,10 @@
     const sol = state.solution[0];
     if (!sol) {
       setMessage('这局没有解, 发新牌吧', 'warn');
+      state.over = false;
       return;
     }
-    els.cards.classList.add('answered');
+    els.pool.classList.add('answered');
     const pretty = Solver.prettyExpr(sol);
     const nums = pretty.split(/([×÷])/).map(part => {
       if (part === '×' || part === '÷') return `<i>${part}</i>`;
@@ -464,19 +579,20 @@
       return part;
     }).join('');
     showAnswer(`答案是: <span class="ans-expr">${nums}</span>`, 'gold');
-    Fx.ring(innerWidth / 2, innerHeight * 0.45, '#f6c453');
-    Fx.sparks(innerWidth / 2, innerHeight * 0.45, 24, '#f6c453');
+    Fx.ring(innerWidth / 2, innerHeight * 0.42, '#f6c453');
+    Fx.sparks(innerWidth / 2, innerHeight * 0.42, 24, '#f6c453');
     Fx.flash('#3ee6ff', 0.15, 420);
     Sfx.reveal();
   }
 
+  function pauseTimer() { stopTimer(); }
+
   function onTimeUp() {
     state.over = true;
     const sol = state.solution[0];
-    els.cards.classList.add('answered');
+    els.pool.classList.add('answered');
     if (sol) {
-      const pretty = Solver.prettyExpr(sol);
-      showAnswer(`时间到! 答案是: <span class="ans-expr">${pretty}</span>`, 'red');
+      showAnswer(`时间到! 答案是: <span class="ans-expr">${Solver.prettyExpr(sol)}</span>`, 'red');
     } else {
       showAnswer('时间到! 这局无解', 'red');
     }
@@ -492,12 +608,11 @@
     $('modeCount').classList.toggle('is-on', mode === 'count');
     els.modeInfo.textContent = mode === 'timer' ? '计时模式' : '挑战 90 秒';
     els.modeInfo.className = 'chip ' + (mode === 'timer' ? 'chip-cyan' : 'chip-magenta');
-    // 切换模式时重置当前局计时显示
     stopTimer();
     state.elapse = 0;
     state.challengeLeft = CHALLENGE_SECONDS;
     els.timer.classList.remove('urgent', 'win');
-    updateTimerDisplay();
+    els.timer.textContent = mode === 'count' ? fmtTime(CHALLENGE_SECONDS) : '00.0s';
     state.started = false;
   }
 
@@ -505,32 +620,31 @@
    * 事件绑定
    * ========================================================= */
   function bindEvents() {
-    // 点牌: 插入该牌数字
-    els.cards.addEventListener('click', (e) => {
-      const card = e.target.closest('.card');
-      if (!card || state.over) return;
-      if (card.classList.contains('used')) {
-        setMessage('这张牌已经用过了', 'warn');
-        Sfx.wrong();
-        return;
-      }
-      appendToken(card.dataset.value);
+    // 点数字池
+    els.pool.addEventListener('click', (e) => {
+      const chip = e.target.closest('.pchip');
+      if (!chip || state.over) return;
+      if (chip.classList.contains('leaving')) return;
+      toggleSelect(+chip.dataset.id);
     });
 
-    // 运算符按键
-    document.querySelectorAll('.key').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (state.over) return;
-        appendToken(btn.dataset.op);
-      });
+    // 运算符
+    document.querySelectorAll('.op').forEach(btn => {
+      btn.addEventListener('click', () => compute(btn.dataset.op));
     });
 
-    $('backspace').addEventListener('click', backspace);
-    $('clearExpr').addEventListener('click', clearExpr);
+    // 历史步骤点击 → 回退
+    els.steps.addEventListener('click', (e) => {
+      const step = e.target.closest('.step');
+      if (!step || state.over) return;
+      rewindTo(+step.dataset.index);
+    });
+
     $('submit').addEventListener('click', submit);
     $('deal').addEventListener('click', deal);
     $('hint').addEventListener('click', hint);
     $('reveal').addEventListener('click', reveal);
+    $('undo').addEventListener('click', undo);
     $('overlayOk').addEventListener('click', () => {
       hideOverlay();
       state.round += 1;
@@ -548,12 +662,17 @@
     // 键盘
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (state.over) return;
       if (e.key === 'Enter') { submit(); return; }
       if (e.key === ' ') { e.preventDefault(); deal(); return; }
-      if (e.key === 'Escape') { clearExpr(); return; }
-      if (e.key === 'Backspace') { backspace(); return; }
-      if (['+', '-', '*', '/', '(', ')'].includes(e.key)) { appendToken(e.key); return; }
-      if (/^[1-9]$/.test(e.key)) { appendToken(e.key); return; }
+      if (e.key === 'Backspace') { undo(); return; }
+      if (e.key === 'Escape') { state.sel = []; syncSelection(); return; }
+      if (['+', '-', '*', '/'].includes(e.key)) { compute(e.key); return; }
+      if (/^[1-9]$/.test(e.key)) {
+        const d = +e.key;
+        const target = state.pool.find(i => !i.leaving && i.value.eq(Frac.of(d)));
+        if (target) toggleSelect(target.id);
+      }
     });
   }
 
@@ -561,7 +680,6 @@
    * 初始化
    * ========================================================= */
   function init() {
-    // 读取持久化数据
     const best = parseFloat(store.get('cal24.best', 'NaN'));
     state.best = isFinite(best) && best > 0 ? best : Infinity;
     state.streak = parseInt(store.get('cal24.streak', '0'), 10) || 0;
