@@ -48,7 +48,6 @@
     roundInfo: $('roundInfo'), modeInfo: $('modeInfo'),
     message: $('message'), answer: $('answer'),
     hintLeft: $('hintLeft'),
-    submit: $('submit'),
     overlay: $('overlay'), overlayBadge: $('overlayBadge'),
     overlayTitle: $('overlayTitle'), overlayRows: $('overlayRows')
   };
@@ -160,9 +159,9 @@
     // 提示文字
     const hint = els.poolHint;
     if (state.over) {
-      hint.textContent = state.pool.length === 1 && state.pool[0].value.eq(Frac.of(24)) ? '结果 = 24, 点击提交答案!' : '';
+      hint.textContent = '';
     } else if (state.pool.length === 1) {
-      hint.textContent = state.pool[0].value.eq(Frac.of(24)) ? '结果 = 24, 点击提交答案!' : '只剩一个数字, 点击提交看看结果';
+      hint.textContent = state.pool[0].value.eq(Frac.of(24)) ? '结果 = 24!' : '只剩一个数字, 不等于 24, 撤销重试';
     } else if (state.sel.length === 2) {
       hint.textContent = '请选择运算符 (+ − × ÷)';
     } else if (state.sel.length === 1) {
@@ -323,17 +322,20 @@
       });
     }, 520);
 
-    // 是否只剩一个数
+    // 是否只剩一个数 -> 自动结算
     if (state.pool.length === 1) {
       const v = state.pool[0];
       els.pool.classList.add('done');
       if (v.value.eq(Frac.of(24))) {
-        Fx.flash('#f6c453', 0.16, 420);
-        Fx.confettiBurst(cx, cy, { count: 60, power: 1 });
-        Sfx.reveal();
-        setMessage('结果 = 24! 点击提交答案锁定成绩', 'info');
+        // 等于 24: 自动结算 (延迟一点让动画播完)
+        setTimeout(() => {
+          Fx.flash('#f6c453', 0.16, 420);
+          Fx.confettiBurst(cx, cy, { count: 60, power: 1 });
+          Sfx.reveal();
+          onCorrect();
+        }, 400);
       } else {
-        setMessage(`结果是 ${v.label}, 不等于 24`, 'error');
+        setMessage(`结果是 ${v.label}, 不等于 24, 可撤销重试`, 'error');
         Sfx.wrong();
       }
     }
@@ -450,23 +452,8 @@
   }
 
   /* =========================================================
-   * 提交答案
+   * 自动结算 (由 compute 在只剩一个数且=24时调用)
    * ========================================================= */
-  function submit() {
-    if (state.over) return;
-    if (state.pool.length > 1) {
-      setMessage(`还剩 ${state.pool.length} 个数字, 继续计算吧`, 'warn');
-      return;
-    }
-    const v = state.pool[0];
-    if (!v.value.eq(Frac.of(24))) {
-      setMessage(`结果是 ${v.label}, 不等于 24`, 'error');
-      Sfx.wrong();
-      shakeOps();
-      return;
-    }
-    onCorrect();
-  }
 
   function onCorrect() {
     stopTimer();
@@ -640,7 +627,6 @@
       rewindTo(+step.dataset.index);
     });
 
-    $('submit').addEventListener('click', submit);
     $('deal').addEventListener('click', deal);
     $('hint').addEventListener('click', hint);
     $('reveal').addEventListener('click', reveal);
@@ -665,7 +651,6 @@
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (state.over) return;
-      if (e.key === 'Enter') { submit(); return; }
       if (e.key === ' ') { e.preventDefault(); deal(); return; }
       if (e.key === 'Backspace') { undo(); return; }
       if (e.key === 'Escape') { state.sel = []; syncSelection(); return; }

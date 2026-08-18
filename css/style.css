@@ -99,29 +99,29 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .app {
   width: min(1040px, 100% - 2rem);
   margin: 0 auto;
-  padding: 1.4rem 0 2rem;
+  padding: 0.7rem 0 0.8rem;
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: 0.6rem;
   flex: 1;
 }
 
 /* =========================================================
  * 顶部: 品牌 + HUD
  * ========================================================= */
-.top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; }
 
-.brand { display: flex; align-items: center; gap: 0.85rem; }
+.brand { display: flex; align-items: center; gap: 0.65rem; }
 .brand-emblem {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 2.1rem;
+  font-size: 1.6rem;
   line-height: 1;
-  width: 58px; height: 58px;
+  width: 44px; height: 44px;
   display: grid; place-items: center;
   background: linear-gradient(160deg, #2a2340, #171226);
   border: 2px solid rgba(246, 196, 83, 0.6);
-  border-radius: 16px;
+  border-radius: 12px;
   color: transparent;
   background-image: linear-gradient(180deg, var(--gold-hi), var(--gold) 45%, var(--gold-deep));
   -webkit-background-clip: text;
@@ -138,23 +138,23 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 @keyframes emblemPulse { 0%, 100% { box-shadow: 0 0 18px rgba(246,196,83,0.28), inset 0 0 14px rgba(246,196,83,0.2); } 50% { box-shadow: 0 0 34px rgba(246,196,83,0.55), inset 0 0 20px rgba(246,196,83,0.35); } }
 @keyframes twinkle { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.4); opacity: 1; } }
 
-.brand-text h1 { font-size: 1.7rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1.1; }
-.brand-text p { font-size: 0.82rem; color: #9aa3c7; margin-top: 0.15rem; }
+.brand-text h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1.1; }
+.brand-text p { font-size: 0.74rem; color: #9aa3c7; margin-top: 0.1rem; }
 .brand-text p b { color: var(--gold); }
 
-.hud { display: flex; gap: 0.7rem; }
+.hud { display: flex; gap: 0.5rem; }
 .stat {
   background: var(--glass);
   border: 1px solid var(--ring);
   border-radius: var(--radius-sm);
-  padding: 0.45rem 0.9rem;
-  min-width: 84px;
+  padding: 0.3rem 0.65rem;
+  min-width: 68px;
   text-align: center;
   backdrop-filter: blur(8px);
 }
-.stat-label { display: block; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: #8b95c0; }
+.stat-label { display: block; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: #8b95c0; }
 .stat-value {
-  display: block; margin-top: 0.12rem; font-size: 1.18rem; font-weight: 800;
+  display: block; margin-top: 0.08rem; font-size: 1rem; font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: var(--gold);
 }
@@ -163,11 +163,35 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .stat-time.win { color: var(--green); text-shadow: 0 0 12px rgba(125, 255, 178, 0.8); }
 @keyframes urgentPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
 
+/* 顶部右侧: 模式切换 + 声音按钮 */
+.top-controls { display: flex; align-items: center; gap: 0.5rem; }
+.seg { display: flex; background: var(--glass); border: 1px solid var(--ring); border-radius: 999px; padding: 0.2rem; backdrop-filter: blur(8px); }
+.seg-btn {
+  padding: 0.32rem 0.85rem; border-radius: 999px;
+  font-size: 0.76rem; font-weight: 700; color: #aab3d8;
+  transition: all 0.2s ease;
+  display: inline-flex; align-items: center; gap: 0.25rem;
+}
+.seg-btn svg { width: 12px; height: 12px; display: block; }
+.seg-btn.is-on {
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold-deep));
+  color: #241d08;
+  box-shadow: 0 4px 14px rgba(246, 196, 83, 0.4);
+}
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--glass); border: 1px solid var(--ring);
+  font-size: 0.9rem; display: grid; place-items: center;
+  transition: all 0.2s;
+}
+.icon-btn svg { width: 16px; height: 16px; display: block; }
+.icon-btn:hover { background: var(--glass-strong); transform: translateY(-2px); }
+
 /* =========================================================
  * 牌桌
  * ========================================================= */
-.table { display: flex; flex-direction: column; gap: 0.65rem; }
-.table-meta { display: flex; align-items: center; justify-content: center; gap: 0.7rem; font-size: 0.82rem; color: #b9c0e3; }
+.table { display: flex; flex-direction: column; gap: 0.4rem; }
+.table-meta { display: flex; align-items: center; justify-content: center; gap: 0.7rem; font-size: 0.78rem; color: #b9c0e3; }
 .chip {
   font-size: 0.72rem; font-weight: 700; padding: 0.18rem 0.6rem; border-radius: 999px; letter-spacing: 0.05em;
 }
@@ -211,7 +235,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   justify-content: center;
   align-items: center;
   gap: clamp(0.6rem, 2.6vw, 1.5rem);
-  min-height: clamp(150px, 24vw, 220px);
+  min-height: clamp(120px, 18vw, 170px);
   perspective: 1200px;
   flex-wrap: wrap;
 }
@@ -230,7 +254,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ---------- 数字池筹码 ---------- */
 .pchip {
   position: relative;
-  width: clamp(72px, 15vw, 112px);
+  width: clamp(60px, 12vw, 92px);
   aspect-ratio: 3 / 4.2;
   border-radius: clamp(8px, 1.2vw, 14px);
   cursor: pointer;
@@ -343,19 +367,19 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
  * 消息 & 答案横幅
  * ========================================================= */
 .message, .answer {
-  min-height: 2rem;
+  min-height: 1.6rem;
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.95rem; font-weight: 600;
+  font-size: 0.88rem; font-weight: 600;
   opacity: 0; transform: translateY(6px);
   transition: opacity 0.3s ease, transform 0.3s ease;
-  text-align: center; padding: 0.1rem 0.6rem;
+  text-align: center; padding: 0.08rem 0.6rem;
 }
 .message.show, .answer.show { opacity: 1; transform: translateY(0); }
 .message.info { color: var(--cyan); }
 .message.warn { color: var(--gold); }
 .message.error { color: var(--magenta); }
 
-.answer { font-size: 1.1rem; }
+.answer { font-size: 1rem; }
 .answer.gold { color: var(--gold); text-shadow: 0 0 14px rgba(246, 196, 83, 0.55); }
 .answer.red { color: var(--magenta); }
 .answer .ans-expr {
@@ -383,18 +407,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: 2.1rem;
+  gap: 0.4rem;
+  min-height: 1.8rem;
 }
 .step {
   display: inline-flex;
   align-items: center;
-  gap: 0.32rem;
+  gap: 0.28rem;
   background: var(--glass);
   border: 1px solid var(--ring);
-  padding: 0.32rem 0.7rem;
-  border-radius: 10px;
-  font-size: 0.95rem;
+  padding: 0.22rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
   color: #dfe4f7;
   transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -415,14 +439,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .ops {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: clamp(0.55rem, 1.4vw, 0.8rem);
-  width: min(520px, 100%);
+  gap: clamp(0.45rem, 1.2vw, 0.65rem);
+  width: min(460px, 100%);
   margin: 0 auto;
 }
 .op {
   position: relative;
-  height: clamp(52px, 8.5vw, 62px);
-  border-radius: 14px;
+  height: clamp(44px, 7vw, 54px);
+  border-radius: 12px;
   background: var(--glass);
   border: 1px solid var(--ring);
   color: #dfe4f7;
@@ -430,11 +454,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.1rem;
+  gap: 0.06rem;
   transition: transform 0.13s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s, color 0.2s;
 }
-.op span { font-size: clamp(1.35rem, 3vw, 1.7rem); font-weight: 800; line-height: 1; }
-.op small { font-size: 0.62rem; opacity: 0.7; letter-spacing: 0.12em; }
+.op span { font-size: clamp(1.1rem, 2.5vw, 1.45rem); font-weight: 800; line-height: 1; }
+.op small { font-size: 0.56rem; opacity: 0.7; letter-spacing: 0.1em; }
 .op:hover { background: var(--glass-strong); border-color: rgba(246, 196, 83, 0.5); transform: translateY(-2px); }
 .op:active { transform: scale(0.95); }
 .op-add span { color: var(--cyan); }
@@ -467,20 +491,21 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* =========================================================
  * 操作按钮
  * ========================================================= */
-.controls { display: flex; justify-content: center; gap: 0.7rem; flex-wrap: wrap; }
+.controls { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
-  padding: 0.72rem 1.4rem;
-  border-radius: 14px;
-  font-size: 1rem; font-weight: 800; letter-spacing: 0.04em;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.88rem; font-weight: 800; letter-spacing: 0.04em;
   transition: transform 0.14s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s;
-  min-width: 118px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .btn:hover { transform: translateY(-2px); }
 .btn:active { transform: scale(0.96); }
-.btn .btn-glyph { font-size: 1.1rem; }
+.btn .btn-glyph { font-size: 0.95rem; }
 .btn .btn-glyph svg { width: 1.1em; height: 1.1em; display: block; }
-.btn em { font-style: normal; font-size: 0.78rem; opacity: 0.85; background: rgba(0,0,0,0.25); padding: 0.12rem 0.45rem; border-radius: 999px; }
+.btn em { font-style: normal; font-size: 0.7rem; opacity: 0.85; background: rgba(0,0,0,0.25); padding: 0.1rem 0.4rem; border-radius: 999px; }
 
 .btn-gold {
   color: #241d08;
@@ -500,33 +525,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .btn-lg { padding: 0.9rem 2.2rem; font-size: 1.1rem; }
 
 /* =========================================================
- * 模式 & 页脚
+ * 页脚提示
  * ========================================================= */
-.modes { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
-.seg { display: flex; background: var(--glass); border: 1px solid var(--ring); border-radius: 999px; padding: 0.25rem; backdrop-filter: blur(8px); }
-.seg-btn {
-  padding: 0.42rem 1.1rem; border-radius: 999px;
-  font-size: 0.85rem; font-weight: 700; color: #aab3d8;
-  transition: all 0.2s ease;
-  display: inline-flex; align-items: center; gap: 0.3rem;
-}
-.seg-btn svg { width: 14px; height: 14px; display: block; }
-.seg-btn.is-on {
-  background: linear-gradient(180deg, var(--gold-hi), var(--gold-deep));
-  color: #241d08;
-  box-shadow: 0 4px 14px rgba(246, 196, 83, 0.4);
-}
-.icon-btn {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: var(--glass); border: 1px solid var(--ring);
-  font-size: 1.05rem; display: grid; place-items: center;
-  transition: all 0.2s;
-}
-.icon-btn svg { width: 18px; height: 18px; display: block; }
-.icon-btn:hover { background: var(--glass-strong); transform: translateY(-2px); }
-
 .footnote {
-  text-align: center; font-size: 0.72rem; color: #6f79a6; margin-top: 0.2rem;
+  text-align: center; font-size: 0.66rem; color: #6f79a6; margin-top: 0.1rem;
 }
 
 /* =========================================================
@@ -570,22 +572,27 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
  * 响应式
  * ========================================================= */
 @media (max-width: 640px) {
-  .app { width: min(100% - 1rem, 1040px); padding: 0.9rem 0 calc(1rem + env(safe-area-inset-bottom, 0px)); gap: 0.9rem; }
-  .top { flex-direction: column; align-items: stretch; }
-  .brand { justify-content: center; }
-  .brand-emblem { width: 50px; height: 50px; font-size: 1.8rem; }
-  .brand-text { text-align: center; }
-  .brand-text h1 { font-size: 1.45rem; }
-  .hud { justify-content: center; }
-  .stat { min-width: 72px; padding: 0.4rem 0.6rem; }
-  .stat-value { font-size: 1rem; }
-  .felt { padding: 1.2rem 0.5rem; border-radius: 20px; }
-  .pool { min-height: 130px; gap: 0.45rem; }
-  .btn { min-width: 0; flex: 1 1 42%; padding: 0.66rem 0.6rem; }
-  .op { height: 50px; }
+  .app { width: min(100% - 1rem, 1040px); padding: 0.5rem 0 0.5rem; gap: 0.45rem; }
+  .top { flex-wrap: wrap; gap: 0.5rem; }
+  .brand { gap: 0.5rem; }
+  .brand-emblem { width: 38px; height: 38px; font-size: 1.3rem; }
+  .brand-text h1 { font-size: 1.1rem; }
+  .brand-text p { font-size: 0.66rem; }
+  .hud { gap: 0.35rem; }
+  .stat { min-width: 56px; padding: 0.22rem 0.45rem; }
+  .stat-label { font-size: 0.54rem; }
+  .stat-value { font-size: 0.85rem; }
+  .top-controls { gap: 0.35rem; }
+  .seg-btn { padding: 0.28rem 0.65rem; font-size: 0.7rem; }
+  .icon-btn { width: 30px; height: 30px; }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .felt { padding: 0.8rem 0.4rem; border-radius: 18px; }
+  .pool { min-height: 100px; gap: 0.35rem; }
+  .pchip { width: clamp(52px, 14vw, 72px); }
+  .btn { padding: 0.42rem 0.5rem; font-size: 0.8rem; }
+  .op { height: 42px; }
   .op small { display: none; }
-  .seg-btn { padding: 0.42rem 0.9rem; font-size: 0.8rem; }
-  .footnote { font-size: 0.62rem; line-height: 1.6; padding: 0 1rem; }
+  .footnote { font-size: 0.56rem; line-height: 1.5; padding: 0 0.5rem; }
 }
 
 /* =========================================================
