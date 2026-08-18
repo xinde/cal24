@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070a1a">
+<meta name="description" content="24点 · 用 4 张扑克牌, 通过加、减、乘、除凑出 24。挑战计时, 比拼最快手速与最强大脑。">
+<title>24点 · 极智卡牌</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23070a1a'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='34' font-weight='700' text-anchor='middle' fill='%23f6c453'%3E24%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ambient background -->
+<div class="bg" aria-hidden="true">
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="orb orb-c"></div>
+  <div class="grid-overlay"></div>
+  <div class="vignette"></div>
+</div>
+
+<canvas id="fx-canvas" aria-hidden="true"></canvas>
+<div class="flash" id="flash" aria-hidden="true"></div>
+
+<main class="app">
+  <!-- ===== header ===== -->
+  <header class="top">
+    <div class="brand">
+      <div class="brand-emblem" aria-hidden="true">24</div>
+      <div class="brand-text">
+        <h1>24点</h1>
+        <p>极智卡牌 · 用四张牌凑出 <b>24</b></p>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div class="stat">
+        <span class="stat-label">用时</span>
+        <span class="stat-value stat-time" id="timer">00.0s</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">最佳</span>
+        <span class="stat-value" id="best">--</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">连对</span>
+        <span class="stat-value" id="streak">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== table ===== -->
+  <section class="table" aria-label="牌桌">
+    <div class="table-meta">
+      <span id="roundInfo">第 1 局</span>
+      <span id="modeInfo" class="chip chip-cyan">计时模式</span>
+    </div>
+
+    <div class="felt" id="felt">
+      <div class="felt-spot"></div>
+      <div class="cards" id="cards" aria-live="polite"></div>
+    </div>
+
+    <div class="message" id="message" role="status"></div>
+    <div class="answer" id="answer" aria-live="polite"></div>
+  </section>
+
+  <!-- ===== expression builder ===== -->
+  <section class="builder" aria-label="算式编辑">
+    <div class="expr-display" id="exprDisplay">
+      <span class="expr-ph" id="exprPh">点击牌面或按键, 拼出算式</span>
+      <span class="expr-tokens" id="exprTokens"></span>
+    </div>
+    <div class="keys" role="group" aria-label="运算符">
+      <button class="key" data-op="+">＋</button>
+      <button class="key" data-op="-">－</button>
+      <button class="key" data-op="*">×</button>
+      <button class="key" data-op="/">÷</button>
+      <button class="key key-paren" data-op="(">(</button>
+      <button class="key key-paren" data-op=")">)</button>
+      <button class="key key-back" id="backspace" title="退格 (Backspace)">⌫</button>
+      <button class="key key-clear" id="clearExpr" title="清空 (Esc)">C</button>
+    </div>
+  </section>
+
+  <!-- ===== controls ===== -->
+  <nav class="controls" aria-label="操作">
+    <button class="btn btn-gold" id="submit"><span class="btn-glyph">✓</span>提交</button>
+    <button class="btn btn-ghost" id="deal"><span class="btn-glyph">🂠</span>发牌</button>
+    <button class="btn btn-ghost" id="hint"><span class="btn-glyph">💡</span>提示 <em id="hintLeft">×2</em></button>
+    <button class="btn btn-ghost" id="reveal"><span class="btn-glyph">✨</span>公布答案</button>
+  </nav>
+
+  <!-- ===== modes / footer ===== -->
+  <footer class="modes">
+    <div class="seg" role="radiogroup" aria-label="游戏模式">
+      <button class="seg-btn is-on" id="modeTimer" data-mode="timer">⏱ 计时</button>
+      <button class="seg-btn" id="modeCount" data-mode="count">🔥 挑战 90s</button>
+    </div>
+    <button class="icon-btn" id="soundBtn" title="声音开关" aria-pressed="true">🔊</button>
+  </footer>
+
+  <p class="footnote">支持键盘: 1-9 插入数字 · + − * / ( ) 运算符 · Enter 提交 · Space 发牌 · Esc 清空</p>
+</main>
+
+<!-- ===== success overlay ===== -->
+<div class="overlay" id="overlay" hidden>
+  <div class="overlay-card">
+    <div class="overlay-badge" id="overlayBadge">🎉</div>
+    <div class="overlay-title" id="overlayTitle">答对了!</div>
+    <div class="overlay-rows" id="overlayRows"></div>
+    <button class="btn btn-gold btn-lg" id="overlayOk">再来一局</button>
+  </div>
+</div>
+
+<script src="js/solver.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
