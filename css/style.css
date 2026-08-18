@@ -135,45 +135,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* =========================================================
  * 顶部: 两行布局
  * row1: 计时/挑战模式 (左) | 声音按钮 (右)
- * row2: 品牌徽标 (左) | HUD统计 (右)
+ * row2: HUD统计 (居中)
  * ========================================================= */
 .top { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .top-row1 { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .top-row2 { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
-.top-row2 .brand { justify-content: center; }
 .top-row2 .hud { justify-content: center; }
-
-.brand { display: flex; align-items: center; gap: 0.65rem; }
-.brand-emblem {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.6rem;
-  line-height: 1;
-  width: 44px; height: 44px;
-  display: grid; place-items: center;
-  background: linear-gradient(160deg, #2a2340, #171226);
-  border: 2px solid rgba(246, 196, 83, 0.6);
-  border-radius: 12px;
-  color: transparent;
-  background-image: linear-gradient(180deg, var(--gold-hi), var(--gold) 45%, var(--gold-deep));
-  -webkit-background-clip: text;
-  background-clip: text;
-  box-shadow: 0 0 22px rgba(246, 196, 83, 0.35), inset 0 0 14px rgba(246, 196, 83, 0.25);
-  animation: emblemPulse 3.2s ease-in-out infinite;
-  position: relative;
-}
-.brand-emblem::after {
-  content: ""; position: absolute; top: -7px; right: -9px; width: 12px; height: 12px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233ee6ff'%3E%3Cpath d='M12 2l2.4 7.2H22l-6 4.4 2.3 7.2L12 16.4 5.7 20.8 8 13.6 2 9.2h7.6z'/%3E%3C/svg%3E") center/contain no-repeat;
-  filter: drop-shadow(0 0 4px var(--cyan)); animation: twinkle 1.8s ease-in-out infinite;
-}
-@keyframes emblemPulse { 0%, 100% { box-shadow: 0 0 18px rgba(246,196,83,0.28), inset 0 0 14px rgba(246,196,83,0.2); } 50% { box-shadow: 0 0 34px rgba(246,196,83,0.55), inset 0 0 20px rgba(246,196,83,0.35); } }
-@keyframes twinkle { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.4); opacity: 1; } }
-
-.brand-text h1 { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1.1; }
-.brand-text p { font-size: 0.74rem; color: #9aa3c7; margin-top: 0.1rem; }
-.brand-text p b { color: var(--gold); }
 
 .hud { display: flex; gap: 0.5rem; }
 .stat {
@@ -617,17 +585,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     gap: 0.45rem;
   }
   .top { gap: 0.4rem; }
-  /* 顶部两行: row1 模式+声音 | row2 品牌+统计 并排, 不再叠三行 */
+  /* 顶部两行: row1 模式+声音 | row2 HUD 居中 */
   .top-row2 {
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     gap: 0.5rem;
   }
-  .brand { gap: 0.4rem; }
-  .brand-emblem { width: 32px; height: 32px; font-size: 1.15rem; border-radius: 10px; }
-  .brand-text h1 { font-size: 1.05rem; }
-  .brand-text p { display: none; }
   .hud { gap: 0.3rem; }
   .stat { min-width: 0; padding: 0.22rem 0.4rem; }
   .stat-label { font-size: 0.5rem; }
@@ -642,29 +606,28 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .ctrl-row { gap: 0.35rem; }
   .op { height: 46px; }
   .op small { display: none; }
+  /* 符号按钮与底部操作按钮隔开, 防误触 */
+  .ops { margin-bottom: 0.9rem; }
   .footnote { font-size: 0.6rem; line-height: 1.5; padding: 0 0.5rem; }
   /* 牌区占满剩余高度并垂直居中, 操作区贴底(拇指可及) */
   .table { flex: 1 1 auto; justify-content: center; }
 }
 
-/* 横屏 (手机 + 矮窗口 + 横屏平板): 顶部品牌与统计并排, 压缩纵向 */
+/* 横屏 (手机 + 矮窗口 + 横屏平板): 顶部 HUD 居中, 压缩纵向 */
 @media (orientation: landscape) and (max-height: 820px) {
   .top-row2 {
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     gap: 0.6rem;
   }
-  .brand-text p { display: none; }
+  .ops { margin-bottom: 0.5rem; }
 }
 
 /* 手机横屏 (矮屏): 进一步压缩, 隐藏辅助文字 */
 @media (orientation: landscape) and (max-height: 520px) {
   .app { gap: 0.3rem; padding-top: calc(0.3rem + var(--sat, 0px)); padding-bottom: calc(0.3rem + var(--sab, 0px)); }
   .top { gap: 0.2rem; }
-  .brand { gap: 0.4rem; }
-  .brand-emblem { width: 28px; height: 28px; font-size: 1rem; }
-  .brand-text h1 { font-size: 0.95rem; }
   .hud { gap: 0.3rem; }
   .stat { min-width: 0; padding: 0.16rem 0.3rem; }
   .pool { min-height: 0; gap: 0.3rem; }
@@ -677,6 +640,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .message, .answer { min-height: 1.1rem; font-size: 0.8rem; padding: 0; }
   .op { height: 38px; }
   .btn { min-height: 36px; padding: 0.35rem 0.5rem; }
+  .ops { margin-bottom: 0.4rem; }
   .footnote { display: none; }
 }
 
