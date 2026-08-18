@@ -1,5 +1,7 @@
 # 24点 · 极智卡牌 (Make 24)
 
+> 在线体验: https://xinde.github.io/cal24/
+
 一个可直接部署到 **GitHub Pages** 的零依赖纯前端「计算 24 点」卡牌游戏。
 用 4 张扑克牌, **分步计算**: 每次选两个数字和一个运算符得出结果, 结果自动投入数字池继续参与运算, 直到凑出 24。
 
@@ -49,6 +51,8 @@ python3 -m http.server 8000   # 或 npx serve .
 打开 <http://localhost:8000>。
 
 ## 部署到 GitHub Pages
+
+已部署: <https://xinde.github.io/cal24/>
 
 ```bash
 git push origin main
