@@ -54,6 +54,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
+html {
+  /* 与 body 渐变主色一致: PWA 启动/滚动回弹/加载前不闪白 */
+  background-color: var(--bg-0);
+}
 body {
   font-family: var(--font-ui);
   color: #eef1fb;
