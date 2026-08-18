@@ -102,7 +102,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   padding: 0.7rem 0 0.8rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.7rem;
   flex: 1;
 }
 
@@ -111,10 +111,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
  * row1: 计时/挑战模式 (左) | 声音按钮 (右)
  * row2: 品牌徽标 (左) | HUD统计 (右)
  * ========================================================= */
-.top { display: flex; flex-direction: column; gap: 0.45rem; }
+.top { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .top-row1 { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.top-row2 { display: flex; flex-direction: column; gap: 0.35rem; }
+.top-row2 { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
+.top-row2 .brand { justify-content: center; }
+.top-row2 .hud { justify-content: center; }
 
 .brand { display: flex; align-items: center; gap: 0.65rem; }
 .brand-emblem {
@@ -239,7 +241,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   justify-content: center;
   align-items: center;
   gap: clamp(0.6rem, 2.6vw, 1.5rem);
-  min-height: clamp(120px, 18vw, 170px);
+  min-height: clamp(140px, 22vw, 190px);
   perspective: 1200px;
   flex-wrap: wrap;
 }
@@ -258,7 +260,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ---------- 数字池筹码 ---------- */
 .pchip {
   position: relative;
-  width: clamp(60px, 12vw, 92px);
+  width: clamp(76px, 15vw, 108px);
   aspect-ratio: 3 / 4.2;
   border-radius: clamp(8px, 1.2vw, 14px);
   cursor: pointer;
@@ -495,7 +497,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* =========================================================
  * 操作按钮
  * ========================================================= */
-.controls { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+.controls { display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; }
+.ctrl-row { display: flex; gap: 0.5rem; }
+.ctrl-row .btn { flex: 1 1 0; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
   padding: 0.5rem 0.9rem;
@@ -577,8 +581,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
  * ========================================================= */
 @media (max-width: 640px) {
   .app { width: min(100% - 1rem, 1040px); padding: 0.5rem 0 0.5rem; gap: 0.45rem; }
-  .top { gap: 0.35rem; }
-  .top-row2 { gap: 0.3rem; }
+  .top { gap: 0.5rem; }
+  .top-row2 { gap: 0.35rem; }
   .brand { gap: 0.5rem; }
   .brand-emblem { width: 38px; height: 38px; font-size: 1.3rem; }
   .brand-text h1 { font-size: 1.1rem; }
@@ -591,9 +595,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .icon-btn { width: 30px; height: 30px; }
   .icon-btn svg { width: 14px; height: 14px; }
   .felt { padding: 0.8rem 0.4rem; border-radius: 18px; }
-  .pool { min-height: 100px; gap: 0.35rem; }
-  .pchip { width: clamp(52px, 14vw, 72px); }
+  .pool { min-height: 120px; gap: 0.35rem; }
+  .pchip { width: clamp(60px, 16vw, 82px); }
   .btn { padding: 0.42rem 0.5rem; font-size: 0.8rem; }
+  .ctrl-row { gap: 0.35rem; }
   .op { height: 42px; }
   .op small { display: none; }
   .footnote { font-size: 0.56rem; line-height: 1.5; padding: 0 0.5rem; }

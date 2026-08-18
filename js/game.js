@@ -45,7 +45,7 @@
     pool: $('pool'), poolHint: $('poolHint'),
     steps: $('steps'),
     timer: $('timer'), best: $('best'), streak: $('streak'),
-    roundInfo: $('roundInfo'), modeInfo: $('modeInfo'),
+    roundInfo: $('roundInfo'),
     message: $('message'), answer: $('answer'),
     hintLeft: $('hintLeft'),
     overlay: $('overlay'), overlayBadge: $('overlayBadge'),
@@ -593,8 +593,6 @@
     state.mode = mode;
     $('modeTimer').classList.toggle('is-on', mode === 'timer');
     $('modeCount').classList.toggle('is-on', mode === 'count');
-    els.modeInfo.textContent = mode === 'timer' ? '计时模式' : '挑战 90 秒';
-    els.modeInfo.className = 'chip ' + (mode === 'timer' ? 'chip-cyan' : 'chip-magenta');
     stopTimer();
     state.elapse = 0;
     state.challengeLeft = CHALLENGE_SECONDS;
