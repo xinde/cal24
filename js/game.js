@@ -352,7 +352,8 @@
    * 发牌
    * ========================================================= */
   function randomCard() {
-    return { value: 1 + ((Math.random() * 13) | 0), suit: SUITS[(Math.random() * 4) | 0] };
+    // 只发 A–10 (1–10), 排除 J/Q/K
+    return { value: 1 + ((Math.random() * 10) | 0), suit: SUITS[(Math.random() * 4) | 0] };
   }
 
   function deal() {
