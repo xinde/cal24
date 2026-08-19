@@ -636,3 +636,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   *, *::before, *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
   .pchip.dealt { animation: none; opacity: 1; }
 }
+
+/* =========================================================
+ * 移动端省电: 收窄模糊半径、停止背景球漂移动画
+ * ========================================================= */
+@media (max-width: 640px) {
+  .orb { filter: blur(56px); animation: none; }
+}
+/* 超窄屏: 进一步关闭混合模式, 用更省的光晕 */
+@media (max-width: 380px) {
+  .orb { mix-blend-mode: normal; opacity: 0.32; filter: blur(48px); }
+}

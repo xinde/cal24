@@ -19,6 +19,16 @@
     return ctx;
   }
 
+  // 首次用户交互时解锁 AudioContext (浏览器自动播放策略)
+  // 首次发牌发生在任何点击之前, 若不提前解锁, 开局音效会被浏览器静音
+  function unlock() {
+    ensure();
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('keydown', unlock);
+  }
+  window.addEventListener('pointerdown', unlock, { passive: true });
+  window.addEventListener('keydown', unlock, { passive: true });
+
   /** 基础音色: 频率包络 + 音量包络 */
   function tone({ freq = 440, freqEnd = null, type = 'sine', dur = 0.15, vol = 0.2, delay = 0, attack = 0.006 }) {
     if (muted) return;

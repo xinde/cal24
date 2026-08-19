@@ -35,6 +35,8 @@
     over: false,     // 已提交/超时/公布 → 本局结束
     elapse: 0,
     timerId: null,
+    winTimer: null,      // 胜局结算定时器 (400ms 后 onCorrect)
+    overlayTimer: null,  // 成绩浮层定时器 (onCorrect 后 1200ms)
     hintsLeft: 2,
     challengeLeft: CHALLENGE_SECONDS
   };
@@ -327,8 +329,11 @@
       const v = state.pool[0];
       els.pool.classList.add('done');
       if (v.value.eq(Frac.of(24))) {
-        // 等于 24: 自动结算 (延迟一点让动画播完)
-        setTimeout(() => {
+        // 等于 24: 立即锁定本局, 防止在结算动画期间撤销/误操作
+        state.over = true;
+        // 自动结算 (延迟一点让结果弹出动画播完); 存句柄以便 deal 时取消
+        state.winTimer = setTimeout(() => {
+          state.winTimer = null;
           Fx.flash('#f6c453', 0.16, 420);
           Fx.confettiBurst(cx, cy, { count: 60, power: 1 });
           Sfx.reveal();
@@ -358,13 +363,14 @@
 
   function deal() {
     stopTimer();
+    clearWinTimers();   // 取消未触发的胜局结算/浮层, 防止幻影结算
     clearMessage();
     clearAnswer();
     state.over = false;
     state.sel = [];
     state.hintsLeft = 2;
     $('hintLeft').textContent = '×' + state.hintsLeft;
-    els.pool.classList.remove('done', 'won');
+    els.pool.classList.remove('done', 'won', 'answered');
 
     let cards;
     do {
@@ -452,6 +458,12 @@
     state.timerId = null;
   }
 
+  /** 取消待触发的胜局结算/成绩浮层定时器 (发新牌/超时/公布时调用, 防止幻影结算) */
+  function clearWinTimers() {
+    if (state.winTimer) { clearTimeout(state.winTimer); state.winTimer = null; }
+    if (state.overlayTimer) { clearTimeout(state.overlayTimer); state.overlayTimer = null; }
+  }
+
   /* =========================================================
    * 自动结算 (由 compute 在只剩一个数且=24时调用)
    * ========================================================= */
@@ -475,8 +487,11 @@
     Fx.celebrate();
     Fx.flash('#f6c453', 0.22, 480);
     Sfx.correct();
-    // 等卡片胜利动画 + 彩带播完再弹成绩浮层
-    setTimeout(showOverlay, 1200);
+    // 等卡片胜利动画 + 彩带播完再弹成绩浮层; 存句柄以便 deal 时取消
+    state.overlayTimer = setTimeout(() => {
+      state.overlayTimer = null;
+      showOverlay();
+    }, 1200);
   }
 
   function updateStats() {
@@ -510,40 +525,65 @@
   }
 
   /* =========================================================
-   * 提示: 高亮解法第一步涉及的两个数字
+   * 提示: 基于当前数字池重新求解, 高亮第一步涉及的两个数字
    * ========================================================= */
+
+  /** 在当前数字池上做分步 DFS, 找到通往 24 的第一步 {aVal, bVal, op, resVal} */
+  function findFirstStepFromPool() {
+    const OPS = ['+', '-', '*', '/'];
+    function rec(arr, path) {
+      if (arr.length === 1) return arr[0].eq(Frac.of(24)) ? path[0] : null;
+      for (let i = 0; i < arr.length; i++) {
+        for (let j = 0; j < arr.length; j++) {
+          if (i === j) continue;
+          for (const op of OPS) {
+            let r;
+            try {
+              if (op === '+') r = arr[i].add(arr[j]);
+              else if (op === '-') r = arr[i].sub(arr[j]);
+              else if (op === '*') r = arr[i].mul(arr[j]);
+              else { if (arr[j].n === 0) continue; r = arr[i].div(arr[j]); }
+            } catch (e) { continue; }
+            const next = arr.filter((_, k) => k !== i && k !== j);
+            next.push(r);
+            const out = rec(next, path.concat([{ i, j, op, r }]));
+            if (out) return out;
+          }
+        }
+      }
+      return null;
+    }
+    const vals = state.pool.map(it => cloneFrac(it.value));
+    return rec(vals, []);
+  }
+
   function hint() {
     if (state.over) return;
     if (state.hintsLeft <= 0) {
       setMessage('提示已用完, 直接公布答案吧', 'warn');
       return;
     }
-    const sol = state.solution[0];
-    if (!sol) { setMessage('这局无解... 换个牌吧', 'warn'); return; }
-    const step = Solver.firstStep(sol);
+    if (state.pool.length <= 1) {
+      setMessage(state.pool[0] && state.pool[0].value.eq(Frac.of(24)) ? '已经是 24 了' : '只剩一个数, 撤销重试吧', 'warn');
+      return;
+    }
+    const step = findFirstStepFromPool();
+
+    if (!step) {
+      setMessage('从当前局面已无法凑出 24, 试试撤销重来', 'warn');
+      return;   // 不消耗次数
+    }
     state.hintsLeft--;
     $('hintLeft').textContent = '×' + state.hintsLeft;
-
-    if (step) {
-      const parts = step.sub.trim().split(/\s*([+\-*/])\s*/).filter(Boolean);
-      const opChar = { '+': '+', '-': '-', '*': '×', '/': '÷' }[parts[1]];
-      const aNum = parseInt(parts[0], 10), bNum = parseInt(parts[2], 10);
-      const pretty = `${parts[0]} ${opChar} ${parts[2]} = ${fmtFrac(step.val)}`;
-      setMessage(`提示: 先算 ${pretty}`, 'info');
-      // 高亮池中匹配的两个数字
-      const targets = [];
-      for (const it of state.pool) {
-        if (it.value.eq(Frac.of(aNum)) || it.value.eq(Frac.of(bNum))) targets.push(it.id);
-        if (targets.length === 2) break;
-      }
-      if (targets.length === 2) {
-        state.sel = targets;
-        syncSelection();
-        Fx.sparks(innerWidth / 2, innerHeight * 0.42, 12, '#3ee6ff');
-      }
-    } else {
-      setMessage(`提示: ${Solver.prettyExpr(sol)}`, 'info');
-    }
+    const aVal = state.pool[step.i].value;
+    const bVal = state.pool[step.j].value;
+    const opChar = { '+': '+', '-': '-', '*': '×', '/': '÷' }[step.op];
+    const pretty = `${fmtFrac(aVal)} ${opChar} ${fmtFrac(bVal)} = ${fmtFrac(step.r)}`;
+    setMessage(`提示: 先算 ${pretty}`, 'info');
+    // 高亮池中这两个数字 (按 id 直接定位, 保证选对)
+    state.sel = [state.pool[step.i].id, state.pool[step.j].id];
+    syncSelection();
+    Fx.sparks(innerWidth / 2, innerHeight * 0.42, 12, '#3ee6ff');
     Sfx.click();
   }
 
@@ -577,7 +617,10 @@
   function pauseTimer() { stopTimer(); }
 
   function onTimeUp() {
+    // 若已结算/已公布/已开新局, 忽略到点回调, 避免与胜局结算竞争显示矛盾
+    if (state.over) return;
     state.over = true;
+    clearWinTimers();
     const sol = state.solution[0];
     els.pool.classList.add('answered');
     if (sol) {
@@ -601,6 +644,8 @@
     els.timer.classList.remove('urgent', 'win');
     els.timer.textContent = mode === 'count' ? fmtTime(CHALLENGE_SECONDS) : '00.0s';
     state.started = false;
+    // 若一局正在进行中 (未结束), 切换模式后立即重启计时, 避免时钟冻结
+    if (!state.over && state.pool.length > 0) startTimer();
   }
 
   /* =========================================================
@@ -650,10 +695,11 @@
     // 键盘
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (state.over) return;
+      // 发牌 / 取消选中 在任何状态下都可用 (即便本局已结束), 方便随时开新局
       if (e.key === ' ') { e.preventDefault(); deal(); return; }
-      if (e.key === 'Backspace') { undo(); return; }
       if (e.key === 'Escape') { state.sel = []; syncSelection(); return; }
+      if (state.over) return;
+      if (e.key === 'Backspace') { undo(); return; }
       if (['+', '-', '*', '/'].includes(e.key)) { compute(e.key); return; }
       if (/^[1-9]$/.test(e.key)) {
         const d = +e.key;

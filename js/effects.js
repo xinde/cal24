@@ -11,6 +11,7 @@
   let parts = [];
   let raf = 0;
   let last = 0;
+  let running = false;       // RAF 是否在跑 (无粒子时停掉省电)
   const DPR = () => (window.devicePixelRatio || 1);
 
   function init() {
@@ -19,7 +20,11 @@
     ctx = cv.getContext('2d');
     resize();
     window.addEventListener('resize', resize);
-    requestAnimationFrame(loop);
+    // 可见性变化: 页面隐藏时停掉 RAF
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stop();
+      else if (parts.length) start();
+    });
   }
 
   function resize() {
@@ -27,6 +32,18 @@
     cv.width = window.innerWidth * DPR();
     cv.height = window.innerHeight * DPR();
     if (ctx) ctx.setTransform(DPR(), 0, 0, DPR(), 0, 0);
+  }
+
+  function start() {
+    if (running) return;
+    running = true;
+    last = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function stop() {
+    running = false;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
   }
 
   function loop(t) {
@@ -39,6 +56,8 @@
       pr.draw(ctx);
       return pr.alive;
     });
+    // 无粒子时停掉循环, 省电
+    if (parts.length === 0) { stop(); }
   }
 
   /* ---------- 粒子类型 ---------- */
@@ -147,10 +166,12 @@
 
   function sparks(x, y, count = 16, color = '#f6c453') {
     for (let i = 0; i < count; i++) parts.push(new Spark(x, y, color));
+    start();
   }
 
   function ring(x, y, color = '#3ee6ff') {
     parts.push(new Ring(x, y, color));
+    start();
   }
 
   function confettiBurst(x, y, opts = {}) {
@@ -160,6 +181,7 @@
     for (let i = 0; i < count; i++) {
       parts.push(new Confetti(x, y, colors[(Math.random() * colors.length) | 0], power));
     }
+    start();
   }
 
   /** 双礼花从两侧/中央绽放 */
