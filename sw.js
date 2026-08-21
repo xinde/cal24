@@ -1,14 +1,14 @@
 /* 24点 PWA Service Worker */
 // 版本号: 每次部署递增 (配合 index.html 中资源的 ?v= 缓存破坏, 保证新 HTML 拉到新 JS/CSS)
-const CACHE = 'cal24-v3';
+const CACHE = 'cal24-v4';
 const SHELL = [
   './',
   './index.html',
-  './css/style.css?v=3',
-  './js/solver.js?v=3',
-  './js/audio.js?v=3',
-  './js/effects.js?v=3',
-  './js/game.js?v=3',
+  './css/style.css?v=4',
+  './js/solver.js?v=4',
+  './js/audio.js?v=4',
+  './js/effects.js?v=4',
+  './js/game.js?v=4',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'

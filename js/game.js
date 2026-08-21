@@ -11,7 +11,15 @@
   const SUITS = ['♠', '♥', '♦', '♣'];
   const RANK = { 1: 'A', 11: 'J', 12: 'Q', 13: 'K' };
   const CHALLENGE_SECONDS = 90;
+  const SHARE_MESSAGES = [
+    '难住了，快来帮我！',
+    '这组数字把我卡住了，你能算出 24 吗？',
+    '我和这道 24 点僵持住了，等你来破局！',
+    '只差一个高手，这题交给你了！',
+    '24 点求助！看看你能不能一眼解开？'
+  ];
   const Frac = Solver.Frac;
+  let sharedCards = readSharedCards();
 
   /* ---------- 持久化 ---------- */
   const store = {
@@ -88,6 +96,60 @@
     const s = sec % 60;
     return m > 0 ? `${m}′${String(Math.floor(s)).padStart(2, '0')}″` : `${s.toFixed(1)}s`;
   };
+
+  function readSharedCards() {
+    const raw = new URLSearchParams(location.search).get('num');
+    if (!raw) return null;
+    const nums = raw.split('-').map(Number);
+    return nums.length === 4 && nums.every(n => Number.isInteger(n) && n >= 1 && n <= 10) ? nums : null;
+  }
+
+  function shareUrl() {
+    const url = new URL(location.href);
+    url.search = '';
+    url.hash = '';
+    if (url.pathname.length > 1) url.pathname = url.pathname.replace(/\/$/, '');
+    url.searchParams.set('num', state.cards.map(card => card.value).join('-'));
+    return url.toString();
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    const copied = document.execCommand('copy');
+    area.remove();
+    return copied ? Promise.resolve() : Promise.reject(new Error('copy failed'));
+  }
+
+  async function sharePuzzle() {
+    if (state.cards.length !== 4) return;
+    const message = SHARE_MESSAGES[(Math.random() * SHARE_MESSAGES.length) | 0];
+    const url = shareUrl();
+    const text = `${url}\n${message}`;
+    Sfx.click();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: '24 点求助', text: message, url });
+        return;
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await copyText(text);
+      setMessage('求助链接已复制，发给朋友吧', 'info');
+    } catch (error) {
+      setMessage('复制失败，请长按地址栏复制链接', 'warn');
+    }
+  }
 
   /* =========================================================
    * 数字池渲染
@@ -373,9 +435,14 @@
     els.pool.classList.remove('done', 'won', 'answered');
 
     let cards;
-    do {
-      cards = [randomCard(), randomCard(), randomCard(), randomCard()];
-    } while (!Solver.isSolvable(cards.map(c => c.value)));
+    if (sharedCards) {
+      cards = sharedCards.map(value => ({ value, suit: SUITS[(Math.random() * 4) | 0] }));
+      sharedCards = null;
+    } else {
+      do {
+        cards = [randomCard(), randomCard(), randomCard(), randomCard()];
+      } while (!Solver.isSolvable(cards.map(c => c.value)));
+    }
 
     state.cards = cards;
     state.solution = Solver.solve(cards.map(c => c.value));
@@ -673,6 +740,7 @@
     });
 
     $('deal').addEventListener('click', deal);
+    $('share').addEventListener('click', sharePuzzle);
     $('hint').addEventListener('click', hint);
     $('reveal').addEventListener('click', reveal);
     $('undo').addEventListener('click', undo);
